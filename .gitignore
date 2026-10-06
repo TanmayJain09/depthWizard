@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Data (large, keep out of git)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/samples/
+
+# Outputs and model weights
+outputs/*
+!outputs/.gitkeep
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# Geo / raster
+*.tif
+*.tiff
+!data/samples/*.tif
+*.aux.xml
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
