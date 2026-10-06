@@ -7,26 +7,23 @@ venv/
 .ipynb_checkpoints/
 .pytest_cache/
 
-# Data (large, keep out of git)
+# Data (large, never commit)
 data/raw/*
-data/processed/*
 !data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/samples/
 
-# Outputs and model weights
-outputs/*
-!outputs/.gitkeep
+# Model weights
+models/checkpoints/*
+!models/checkpoints/.gitkeep
 *.pth
 *.pt
 *.ckpt
 *.safetensors
 
-# Geo / raster
-*.tif
-*.tiff
-!data/samples/*.tif
-*.aux.xml
+# Generated outputs
+backend/outputs/*
+!backend/outputs/.gitkeep
+eval/results/*
+!eval/results/.gitkeep
 
 # Frontend
 frontend/node_modules/
