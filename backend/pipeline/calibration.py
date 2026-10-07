@@ -1,8 +1,8 @@
 """Per-class scale shift calibration of relative depth into elevation
 
 Two Mode : 
-    - calibrated_georeferenced : least square fit (numpy.polyfit) per class against refernce heights (SRTM / GCP / DFC2019 AGL during benchmaking)
-    - calibrated_relative : spicy.optimize with class height prior and boundary consistency, for input with no reference, output is approximate meter, not absolute
+    - calibrate_georeferenced : least square fit (numpy.polyfit) per class against refernce heights (SRTM / GCP / DFC2019 AGL during benchmaking)
+    - calibrate_relative : scipy.optimize with class height priority and boundary consistency, for input with no reference, output is approximate meter, not absolute
 """
 
 from dataclasses import dataclass, field
@@ -63,3 +63,69 @@ def calibrate_georeferenced(depth, labels, reference, valid = None) -> Calibrati
             resid[cid] = float("nan")
 
     return CalibrationResult(_apply(depth,labels,params), params, resid, "georeferenced")
+
+def calibrate_relative(depth, labels, n_sample = 50000, seed=0) -> CalibrationResult : 
+    """No reference : fit per class scale / shift to height priority + boundary consistency"""
+
+    rng = np.random.default_rng(seed)
+    classes = [c for c in CLASS_NAMES if (labels == c).sum() >= MIN_POINTS]
+
+    if not classes : 
+        raise ValueError("No class has enough pixel to calibrate")
+
+    #sample pixels per class (keeps the optimiser fast)
+    samples = {}
+
+    for c in classes : 
+        idx = np.flatnonzero((labels==c).ravel())
+        samples[c] = depth.ravel()[
+            rng.choice(
+                idx,
+                min(len(idx),n_sample),
+                replace=False
+            )
+        ]
+
+    #horizontal label pair creates the class boundary
+    l1, l2 = labels[:,:-1] , labels[:,1:]
+    d1, d2 = depth[:,:-1] , depth[:,1:]
+
+    cross = (l1 != l2) & (np.isin(l1,classes)) & (np.isin(l2,classes))
+
+    bi = np.flatnonzero(cross.ravel())
+    if len(bi) > n_sample : 
+        bi = rng.choice(bi, n_sample, replace=False)
+
+    bl1, bl2 = l1.ravel()[bi], l2.ravel()[bi]
+    bd1, bd2 = d1.ravel()[bi], d2.ravel()[bi]
+
+    def loss(theta) : 
+        p = {
+            c: (theta[2*i], theta[2*i+1])
+            for i,c in enumerate(classes)
+        }
+
+        total = 0.0
+
+        #1) heigth prior : class mean should look plausible
+        for c in classes : 
+            a, b = p[c]
+            h = a * samples[c] + b
+            mu, sd = HEIGHT_PRIORS[c]
+            total += ((h.mean() - mu) / sd) ** 2 + ((h.std() - sd)/sd) ** 2
+
+        if len(bi):
+            a1 = np.array([p[c][0] for c in bl1]); b1 = np.array([p[c][1] for c in bl1])
+            a2 = np.array([p[c][0] for c in bl2]); b2 = np.array([p[c][1] for c in bl2])
+            jump = (a1 * bd1 + b1) - (a2 * bd2 + b2)
+            prior = np.array([HEIGHT_PRIORS[c][0] for c in bl1]) - np.array([HEIGHT_PRIORS[c][0] for c in bl2])
+            total += 0.1 * np.mean(((jump - prior) / 5.0) ** 2)
+        
+        return total
+
+    theta0 = np.tile([10.0, 0.0], len(classes))
+    res = minimize(loss,theta0, method="L-BFGS-B")
+
+    params = {c: (float(res.x[2 * i]), float(res.x[2 * i + 1])) for i, c in enumerate(classes)}
+    resid = {c: HEIGHT_PRIORS[c][1] for c in classes}  # no reference: use prior spread as uncertainty
+    return CalibrationResult(_apply(depth, labels, params), params, resid, "relative")
