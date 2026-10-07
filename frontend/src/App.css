@@ -1,184 +1,163 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+@import "./tokens.css";
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
-
-.hero {
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
   position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
 }
 
-#center {
+.centered {
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
-}
-
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
-}
-
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
-
-.ticks {
-  position: relative;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, var(--bg-1) 0%, var(--bg-0) 100%);
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+.upload-container {
+  padding: var(--sp-4);
+  width: 100%;
+  height: 100%;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+.drop-zone {
+  width: 400px;
+  height: 200px;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.2s ease;
+  background-color: var(--bg-1);
+}
+
+.drop-zone:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-2);
+}
+
+.file-hidden {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-config-box {
+  width: 400px;
+  padding: var(--sp-6);
+  background-color: var(--bg-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.badge {
+  font-size: var(--text-10);
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid var(--border-hairline);
+}
+
+.badge-geo {
+  background-color: rgba(85, 209, 123, 0.1);
+  color: var(--ok);
+  border-color: rgba(85, 209, 123, 0.2);
+}
+
+.badge-rel {
+  background-color: rgba(209, 163, 85, 0.1);
+  color: var(--warn);
+  border-color: rgba(209, 163, 85, 0.2);
+}
+
+.select-input {
+  width: 100%;
+  background-color: var(--bg-0);
+  border: 1px solid var(--border-hairline);
+  color: var(--fg-0);
+  padding: var(--sp-2);
+  font-family: var(--font-ui);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.select-input:focus {
+  border-color: var(--accent);
+}
+
+.file-input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  color: var(--fg-1);
+}
+
+.progress-box, .error-box {
+  width: 300px;
+  padding: var(--sp-6);
+  background-color: var(--bg-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 2px;
+  background-color: var(--bg-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 0.3s ease;
+}
+
+/* Status Bar */
+.status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background-color: var(--bg-1);
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  color: var(--fg-1);
+  z-index: 100;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.mock-badge {
+  background-color: var(--warn);
+  color: var(--bg-0);
+  padding: 0 4px;
+  font-weight: bold;
 }
