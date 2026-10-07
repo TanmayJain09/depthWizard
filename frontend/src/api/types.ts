@@ -1,64 +1,71 @@
 import { z } from "zod";
 
-// --- Base Types ---
-export const GeoMetaSchema = z.object({
-  crs: z.string().optional(),
-  transform: z.array(z.number()).optional(),
-  units: z.enum(["m", "relative", "unknown"]).optional(),
-  minHeight: z.number().optional(),
-  maxHeight: z.number().optional(),
+// --- Backend API Schemas ---
+export const JobCreatedSchema = z.object({
+  job_id: z.string(),
+  status_url: z.string(),
 });
+export type JobCreated = z.infer<typeof JobCreatedSchema>;
 
-export const ClassSummarySchema = z.record(
-  z.string(),
-  z.object({
-    rmse: z.number(),
-    n_ref: z.number(),
-    scale: z.number(),
-    shift: z.number(),
-  })
-);
+export const JobStatusSchema = z.object({
+  job_id: z.string(),
+  status: z.enum(["queued", "processing", "done", "failed"]),
+  error: z.string().nullable().optional(),
+  metadata_url: z.string().nullable().optional(),
+});
+export type JobStatus = z.infer<typeof JobStatusSchema>;
 
-export const ValidationReportSchema = z.object({
+export const ClassStatsSchema = z.object({
   rmse: z.number(),
-  mae: z.number(),
-  correlation: z.number(),
-  bias: z.number(),
+  n_ref: z.number(),
+  scale: z.number(),
+  shift: z.number(),
 });
+export type ClassStats = z.infer<typeof ClassStatsSchema>;
 
-// --- API Request/Response Types ---
-export const PredictResponseSchema = z.object({
-  jobId: z.string(),
-  status: z.enum(["pending", "processing", "completed", "failed"]),
-  message: z.string().optional(),
+export const MetadataSchema = z.object({
+  job_id: z.string(),
+  mode: z.enum(["georeferenced", "relative"]),
+  units: z.enum(["metres", "normalized"]),
+  width: z.number(),
+  height: z.number(),
+  height_min: z.number(),
+  height_max: z.number(),
+  heightmap_encoding: z.string(),
+  pixel_size_m: z.number().nullable().optional(),
+  mean_confidence: z.number(),
+  classes: z.record(z.string(), ClassStatsSchema),
+  files: z.record(z.string(), z.string()),
 });
+export type Metadata = z.infer<typeof MetadataSchema>;
 
-export const JobResultSchema = z.object({
-  status: z.enum(["pending", "processing", "completed", "failed"]),
-  progress: z.number().optional(),
-  stage: z.string().optional(),
-  error: z.string().optional(),
-  result: z.object({
-    dsmUrl: z.string(),
-    confidenceUrl: z.string().optional(),
-    meta: GeoMetaSchema,
-    classSummary: ClassSummarySchema.optional(),
-  }).optional(),
-});
+// --- Frontend Internal Types ---
+export type JobResult = {
+  status: "queued" | "processing" | "done" | "failed";
+  progress: number;
+  stage: string;
+  error?: string | null;
+  result?: {
+    heightmapUrl: string;
+    confidenceUrl?: string;
+    textureUrl?: string;
+    meta: Metadata;
+  } | null;
+};
 
-export type GeoMeta = z.infer<typeof GeoMetaSchema>;
-export type ClassSummary = z.infer<typeof ClassSummarySchema>;
-export type ValidationReport = z.infer<typeof ValidationReportSchema>;
-export type PredictResponse = z.infer<typeof PredictResponseSchema>;
-export type JobResult = z.infer<typeof JobResultSchema>;
+export interface PredictResponse {
+  jobId: string;
+  statusUrl: string;
+}
 
 export interface ApiClient {
   predict(
     image: File,
     labels?: File,
     reference?: File,
-    calibrate?: "georeferenced" | "relative" | "none"
+    calibrate?: "georeferenced" | "relative" | "none",
+    signal?: AbortSignal
   ): Promise<PredictResponse>;
   
-  getJobStatus(jobId: string): Promise<JobResult>;
+  getJobStatus(jobId: string, signal?: AbortSignal): Promise<JobResult>;
 }

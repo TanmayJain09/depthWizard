@@ -1,7 +1,11 @@
+import { decode } from "fast-png";
+
 export interface MeshBuildParams {
+  heightmapUrl: string;
+  minHeight: number;
+  maxHeight: number;
   width: number;
   height: number;
-  data: Float32Array;
   exaggeration: number;
 }
 
@@ -9,11 +13,26 @@ export interface MeshBuildResult {
   positions: Float32Array;
   indices: Uint32Array;
   uvs: Float32Array;
+  data: Float32Array; // The raw un-exaggerated float heights, useful for the main thread hover
 }
 
-self.onmessage = (e: MessageEvent<MeshBuildParams>) => {
-  const { width, height, data, exaggeration } = e.data;
+self.onmessage = async (e: MessageEvent<MeshBuildParams>) => {
+  const { heightmapUrl, width, height, minHeight, maxHeight, exaggeration } = e.data;
 
+  // Fetch the 16-bit PNG
+  const res = await fetch(heightmapUrl);
+  if (!res.ok) {
+    console.error("Worker failed to fetch heightmap");
+    return;
+  }
+  const buffer = await res.arrayBuffer();
+  
+  // Decode using fast-png
+  const png = decode(buffer);
+  const rawData = png.data; // Uint16Array
+  
+  const span = maxHeight - minHeight;
+  
   // We build a plane geometry where Z is up
   const segmentsX = width - 1;
   const segmentsY = height - 1;
@@ -21,6 +40,7 @@ self.onmessage = (e: MessageEvent<MeshBuildParams>) => {
   const vertices = new Float32Array(width * height * 3);
   const uvs = new Float32Array(width * height * 2);
   const indices = new Uint32Array(segmentsX * segmentsY * 6);
+  const data = new Float32Array(width * height);
 
   let v = 0;
   let uvIdx = 0;
@@ -32,11 +52,14 @@ self.onmessage = (e: MessageEvent<MeshBuildParams>) => {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
       const px = x - halfWidth;
       const py = halfHeight - y;
       
-      const idx = y * width + x;
-      const pz = data[idx] * exaggeration;
+      const rawPx = rawData[idx];
+      const h = minHeight + (rawPx / 65535.0) * span;
+      data[idx] = h;
+      const pz = h * exaggeration;
 
       vertices[v++] = px;
       vertices[v++] = py;
@@ -46,11 +69,6 @@ self.onmessage = (e: MessageEvent<MeshBuildParams>) => {
       uvs[uvIdx++] = 1.0 - (y / segmentsY);
 
       if (x < segmentsX && y < segmentsY) {
-        const a = x + segmentsX + 1;
-        const b = x + segmentsX + 2;
-        const c = x;
-        const d = x + 1;
-
         const row1 = y * width;
         const row2 = (y + 1) * width;
 
@@ -73,8 +91,9 @@ self.onmessage = (e: MessageEvent<MeshBuildParams>) => {
   const result: MeshBuildResult = {
     positions: vertices,
     indices,
-    uvs
+    uvs,
+    data
   };
 
-  self.postMessage(result, [vertices.buffer, indices.buffer, uvs.buffer]);
+  self.postMessage(result, { transfer: [vertices.buffer, indices.buffer, uvs.buffer, data.buffer] });
 };

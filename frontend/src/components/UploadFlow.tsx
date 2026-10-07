@@ -5,7 +5,6 @@ import { Upload, FileWarning } from "lucide-react";
 export function UploadFlow() {
   const {
     selectedFile,
-    referenceFile,
     calibrateMode,
     jobStatus,
     jobProgress,
@@ -33,7 +32,7 @@ export function UploadFlow() {
 
   const isGeoTiff = selectedFile?.name.toLowerCase().endsWith(".tif") || selectedFile?.name.toLowerCase().endsWith(".tiff");
 
-  if (jobStatus === "processing" || jobStatus === "pending") {
+  if (jobStatus === "processing" || jobStatus === "queued") {
     return (
       <div className="upload-container centered">
         <div className="progress-box">
@@ -111,6 +110,22 @@ export function UploadFlow() {
               {isGeoTiff && <option value="georeferenced">Georeferenced (Sparse Points)</option>}
               <option value="relative">Relative (Height Priors)</option>
             </select>
+          </div>
+
+          <div style={{ marginTop: "var(--sp-4)" }}>
+            <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Advanced: Segmentation Mask (Optional)</div>
+            <input 
+              type="file" 
+              accept=".png,.jpg,.jpeg" 
+              onChange={(e) => {
+                const store = useAppStore.getState();
+                if (e.target.files) store.setLabelsFile(e.target.files[0]);
+              }}
+              className="file-input"
+            />
+            <div className="mono-data" style={{ fontSize: "var(--text-10)", color: "var(--fg-2)", marginTop: "var(--sp-1)" }}>
+              If omitted, a blank mask is automatically generated.
+            </div>
           </div>
 
           {calibrateMode === "georeferenced" && (

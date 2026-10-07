@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { ToolMode } from "./ToolRail";
+import type { ToolMode } from "./ToolRail";
 
 interface InspectorPanelProps {
   activeTool: ToolMode;

@@ -1,5 +1,4 @@
-import React from "react";
-import { Navigation, Move3d, Ruler, TrendingUp, Activity, CheckSquare } from "lucide-react";
+import { Navigation, Ruler, TrendingUp, Activity, CheckSquare } from "lucide-react";
 
 export type ToolMode = "navigate" | "measure" | "slope" | "profile" | "validate";
 

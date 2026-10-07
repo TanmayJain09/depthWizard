@@ -1,4 +1,4 @@
-import { fromUrl, fromBlob, fromArrayBuffer } from "geotiff";
+import { fromUrl } from "geotiff";
 
 export interface TerrainGrid {
   width: number;
@@ -39,37 +39,35 @@ export async function parseGeoTiffUrl(url: string): Promise<TerrainGrid> {
   return { width, height, data, minHeight, maxHeight };
 }
 
-export async function parsePngUrl(url: string): Promise<TerrainGrid> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      const width = img.width;
-      const height = img.height;
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("Failed to get 2d context"));
-      
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, width, height);
-      
-      const data = new Float32Array(width * height);
-      let minHeight = Infinity;
-      let maxHeight = -Infinity;
+import { decode } from "fast-png";
 
-      for (let i = 0; i < data.length; i++) {
-        // Red channel used for relative depth in mock PNG
-        const v = imgData.data[i * 4] / 255.0; 
-        data[i] = v;
-        if (v < minHeight) minHeight = v;
-        if (v > maxHeight) maxHeight = v;
-      }
+export async function parsePngUrl(url: string, metaMinHeight: number, metaMaxHeight: number): Promise<TerrainGrid> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch heightmap: ${res.statusText}`);
+  
+  const buffer = await res.arrayBuffer();
+  const png = decode(buffer);
+  
+  const width = png.width;
+  const height = png.height;
+  
+  // fast-png decodes 16-bit grayscale PNG to Uint16Array.
+  // We reconstruct the absolute heights using the formula from backend metadata.
+  const data = new Float32Array(width * height);
+  const rawData = png.data;
+  
+  const span = metaMaxHeight - metaMinHeight;
+  
+  let minHeight = Infinity;
+  let maxHeight = -Infinity;
 
-      resolve({ width, height, data, minHeight, maxHeight });
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
+  for (let i = 0; i < data.length; i++) {
+    const px = rawData[i];
+    const h = metaMinHeight + (px / 65535.0) * span;
+    data[i] = h;
+    if (h < minHeight) minHeight = h;
+    if (h > maxHeight) maxHeight = h;
+  }
+
+  return { width, height, data, minHeight, maxHeight };
 }

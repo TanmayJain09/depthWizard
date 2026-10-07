@@ -1,15 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, MapControls, PointerLockControls } from "@react-three/drei";
+import { MapControls, PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useAppStore } from "../store";
-import { parseGeoTiffUrl, parsePngUrl, TerrainGrid } from "../core/terrain";
+import type { TerrainGrid } from "../core/terrain";
 import type { MeshBuildResult, MeshBuildParams } from "../core/terrain.worker";
 
-function TerrainMesh({ grid, textureUrl, exaggeration }: { grid: TerrainGrid, textureUrl: string | null, exaggeration: number }) {
+function TerrainMesh({ meta, heightmapUrl, textureUrl, exaggeration, onGridParsed }: { meta: any, heightmapUrl: string, textureUrl: string | null, exaggeration: number, onGridParsed: (grid: TerrainGrid) => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const geomRef = useRef<THREE.BufferGeometry>(null);
   const [built, setBuilt] = useState(false);
+  const [gridData, setGridData] = useState<Float32Array | null>(null);
   
   const texture = textureUrl ? new THREE.TextureLoader().load(textureUrl) : null;
   if (texture) {
@@ -23,40 +24,50 @@ function TerrainMesh({ grid, textureUrl, exaggeration }: { grid: TerrainGrid, te
     
     worker.onmessage = (e: MessageEvent<MeshBuildResult>) => {
       if (!geomRef.current) return;
-      const { positions, indices, uvs } = e.data;
+      const { positions, indices, uvs, data } = e.data;
       geomRef.current.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       geomRef.current.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
       geomRef.current.setIndex(new THREE.BufferAttribute(indices, 1));
       geomRef.current.computeVertexNormals();
       setBuilt(true);
+      setGridData(data);
+      onGridParsed({
+        width: meta.width,
+        height: meta.height,
+        data,
+        minHeight: meta.height_min,
+        maxHeight: meta.height_max
+      });
     };
 
     worker.postMessage({
-      width: grid.width,
-      height: grid.height,
-      data: grid.data,
+      heightmapUrl,
+      width: meta.width,
+      height: meta.height,
+      minHeight: meta.height_min,
+      maxHeight: meta.height_max,
       exaggeration: 1.0, // baseline
     } as MeshBuildParams);
 
     return () => worker.terminate();
-  }, [grid]);
+  }, [heightmapUrl, meta]);
 
   // Update exaggeration in place
   useEffect(() => {
-    if (!built || !geomRef.current) return;
+    if (!built || !geomRef.current || !gridData) return;
     const pos = geomRef.current.getAttribute("position");
     if (!pos) return;
     
     const arr = pos.array as Float32Array;
     let v = 2; // z is at index 2, 5, 8...
-    for (let i = 0; i < grid.data.length; i++) {
-      arr[v] = grid.data[i] * exaggeration;
+    for (let i = 0; i < gridData.length; i++) {
+      arr[v] = gridData[i] * exaggeration;
       v += 3;
     }
     
     pos.needsUpdate = true;
     geomRef.current.computeVertexNormals();
-  }, [exaggeration, built, grid]);
+  }, [exaggeration, built, gridData]);
 
   useEffect(() => {
     return () => {
@@ -92,7 +103,7 @@ function FlyCamera() {
     };
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const speed = keys.current["ShiftLeft"] ? 150 : 50;
     const d = speed * delta;
     
@@ -135,35 +146,25 @@ export function TerrainViewer() {
     };
   }, [selectedFile]);
 
-  useEffect(() => {
-    if (!result) return;
-    const load = async () => {
-      const isGeo = result.dsmUrl.endsWith(".tif") || result.dsmUrl.endsWith(".tiff");
-      const g = isGeo ? await parseGeoTiffUrl(result.dsmUrl) : await parsePngUrl(result.dsmUrl);
-      setGrid(g);
-    };
-    load();
-  }, [result]);
+  // Grid is now populated by the worker callback to keep the main thread clean during initial load
+  // We still keep the state here for the measure/hover readouts.
 
   const handlePointerMove = (e: any) => {
     if (!readoutRef.current || !grid) return;
     const intersects = e.intersections;
     if (intersects.length > 0) {
-      const p = intersects[0].point;
       const uv = intersects[0].uv;
       
       const px = Math.floor(uv.x * grid.width);
       const py = Math.floor((1.0 - uv.y) * grid.height);
       const h = grid.data[py * grid.width + px];
       
-      const isGeo = result?.meta?.units === "m";
+      const isGeo = result?.meta?.units === "metres";
       let text = `X: ${px} Y: ${py} | H: ${h.toFixed(2)}${isGeo ? "m" : ""}`;
       
-      if (isGeo && result?.meta?.transform) {
-        const [x0, dx, , y0, , dy] = result.meta.transform;
-        const lon = x0 + px * dx;
-        const lat = y0 + py * dy;
-        text += ` | Lat: ${lat.toFixed(5)} Lon: ${lon.toFixed(5)}`;
+      if (isGeo && result?.meta?.files?.georeferenced) {
+         // TODO: We could use the actual GeoTIFF for Lat/Lon, but for now we skip transform lookup
+         // if it's not in the metadata.
       }
       
       readoutRef.current.innerText = text;
@@ -190,7 +191,7 @@ export function TerrainViewer() {
     }
   }, [activeTool]);
 
-  if (!grid) return <div className="centered"><div className="mono-data" style={{ color: "var(--fg-1)" }}>Parsing Terrain...</div></div>;
+  if (!result || !result.meta || !result.heightmapUrl) return null;
 
   let distText = "";
   if (measurePoints.length === 2) {
@@ -210,7 +211,13 @@ export function TerrainViewer() {
         <directionalLight position={[1000, 1000, 500]} intensity={1.5} />
         <fog attach="fog" args={["#0D1013", 1000, 4000]} />
         
-        <TerrainMesh grid={grid} textureUrl={textureUrl} exaggeration={exaggeration} />
+        <TerrainMesh 
+          meta={result.meta}
+          heightmapUrl={result.heightmapUrl}
+          textureUrl={result.textureUrl || textureUrl} 
+          exaggeration={exaggeration} 
+          onGridParsed={setGrid}
+        />
         
         {measurePoints.map((p, i) => (
           <mesh key={i} position={p}>

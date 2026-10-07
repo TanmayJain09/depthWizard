@@ -1,9 +1,12 @@
 import { create } from "zustand";
-import { api, JobResult } from "../api";
+import { api } from "./api";
+import type { JobResult } from "./api";
+import { createDummyLabelsFile } from "./core/dummy";
 
 interface AppState {
   // Input
   selectedFile: File | null;
+  labelsFile: File | null;
   referenceFile: File | null;
   calibrateMode: "none" | "georeferenced" | "relative";
   
@@ -22,7 +25,8 @@ interface AppState {
 
   // Actions
   setFile: (file: File) => void;
-  setReferenceFile: (file: File) => void;
+  setLabelsFile: (file: File | null) => void;
+  setReferenceFile: (file: File | null) => void;
   setCalibrateMode: (mode: "none" | "georeferenced" | "relative") => void;
   setActiveTool: (tool: AppState["activeTool"]) => void;
   setExaggeration: (val: number) => void;
@@ -33,6 +37,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   selectedFile: null,
+  labelsFile: null,
   referenceFile: null,
   calibrateMode: "none",
   
@@ -48,6 +53,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   cameraMode: "orbit",
 
   setFile: (file) => set({ selectedFile: file }),
+  setLabelsFile: (file) => set({ labelsFile: file }),
   setReferenceFile: (file) => set({ referenceFile: file }),
   setCalibrateMode: (mode) => set({ calibrateMode: mode }),
   setActiveTool: (tool) => set({ activeTool: tool }),
@@ -55,23 +61,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCameraMode: (mode) => set({ cameraMode: mode }),
   reset: () => set({ 
     selectedFile: null, 
+    labelsFile: null,
     referenceFile: null, 
     jobId: null, 
     jobStatus: "idle",
     result: null,
     jobProgress: 0,
-    jobStage: "",
     jobError: null,
   }),
 
   startJob: async () => {
-    const { selectedFile, referenceFile, calibrateMode } = get();
+    const { selectedFile, labelsFile, referenceFile, calibrateMode } = get();
     if (!selectedFile) return;
 
     try {
-      set({ jobStatus: "pending", jobProgress: 0, jobStage: "Submitting..." });
+      set({ jobStatus: "queued", jobProgress: 0, jobStage: "Submitting..." });
       
-      const res = await api.predict(selectedFile, undefined, referenceFile || undefined, calibrateMode !== "none" ? calibrateMode : undefined);
+      let finalLabels = labelsFile;
+      if (!finalLabels) {
+        set({ jobStage: "Generating default mask..." });
+        finalLabels = await createDummyLabelsFile(selectedFile);
+      }
+      
+      set({ jobStage: "Submitting..." });
+      const res = await api.predict(selectedFile, finalLabels, referenceFile || undefined, calibrateMode !== "none" ? calibrateMode : undefined);
       
       set({ jobId: res.jobId, jobStatus: "processing" });
       
@@ -86,9 +99,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           jobError: statusRes.error || null,
         });
 
-        if (statusRes.status === "completed") {
+        if (statusRes.status === "done") {
           set({ result: statusRes.result });
-        } else if (statusRes.status === "processing" || statusRes.status === "pending") {
+        } else if (statusRes.status === "processing" || statusRes.status === "queued") {
           setTimeout(poll, 1000);
         }
       };

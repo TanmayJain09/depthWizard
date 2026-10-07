@@ -1,4 +1,5 @@
-import { ApiClient, PredictResponse, JobResult, GeoMeta } from "./types";
+import type { ApiClient, PredictResponse, JobResult, Metadata } from "./types";
+import { encode } from "fast-png";
 
 // Configuration for the mock behavior
 const MOCK_CONFIG = {
@@ -13,6 +14,7 @@ const JOB_DB = new Map<string, {
   stage: string;
   type: "georeferenced" | "relative";
   error?: string;
+  mockResult?: any;
 }>();
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -23,12 +25,26 @@ const randomFail = () => {
   }
 };
 
+function generateFakeHeightmap(width: number, height: number): string {
+  const data = new Uint16Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const h = (Math.sin(x / 20) + Math.cos(y / 20) + 2) / 4; 
+      data[y * width + x] = Math.floor(h * 65535);
+    }
+  }
+  const pngBuffer = encode({ width, height, data, depth: 16, channels: 1 });
+  const blob = new Blob([pngBuffer as any], { type: "image/png" });
+  return URL.createObjectURL(blob);
+}
+
 export class MockApiClient implements ApiClient {
   async predict(
     image: File,
-    labels?: File,
-    reference?: File,
-    calibrate?: "georeferenced" | "relative" | "none"
+    _labels?: File,
+    _reference?: File,
+    _calibrate?: "georeferenced" | "relative" | "none",
+    _signal?: AbortSignal
   ): Promise<PredictResponse> {
     await sleep(MOCK_CONFIG.latencyMs);
     randomFail();
@@ -42,7 +58,7 @@ export class MockApiClient implements ApiClient {
     const jobId = `mock-job-${Date.now()}`;
     
     JOB_DB.set(jobId, {
-      status: "pending",
+      status: "queued",
       progress: 0,
       stage: "Queued",
       type: isGeoreferenced ? "georeferenced" : "relative"
@@ -53,12 +69,11 @@ export class MockApiClient implements ApiClient {
 
     return {
       jobId,
-      status: "pending",
-      message: "Job submitted to mock backend"
+      statusUrl: `/api/v1/jobs/${jobId}`
     };
   }
 
-  async getJobStatus(jobId: string): Promise<JobResult> {
+  async getJobStatus(jobId: string, _signal?: AbortSignal): Promise<JobResult> {
     await sleep(MOCK_CONFIG.latencyMs / 2);
     randomFail();
 
@@ -68,36 +83,15 @@ export class MockApiClient implements ApiClient {
     }
 
     if (job.status === "failed") {
-      return { status: "failed", error: job.error };
+      return { status: "failed", error: job.error, progress: job.progress, stage: job.stage };
     }
 
-    if (job.status === "completed") {
-      const isGeo = job.type === "georeferenced";
-      const meta: GeoMeta = isGeo ? {
-        crs: "EPSG:32755",
-        transform: [144.9631, 1.0, 0, -37.8136, 0, -1.0],
-        units: "m",
-        minHeight: 0,
-        maxHeight: 100
-      } : {
-        units: "relative",
-        minHeight: 0,
-        maxHeight: 1
-      };
-
+    if (job.status === "done") {
       return {
-        status: "completed",
+        status: "done",
         progress: 100,
         stage: "Done",
-        result: {
-          dsmUrl: isGeo ? "/mock/dsm_absolute.tif" : "/mock/dsm_relative.png",
-          confidenceUrl: isGeo ? "/mock/confidence.tif" : undefined,
-          meta,
-          classSummary: isGeo ? {
-            "ground": { rmse: 2.1, n_ref: 50, scale: 1.0, shift: 0.0 },
-            "vegetation": { rmse: 4.5, n_ref: 30, scale: 1.1, shift: 0.5 }
-          } : undefined
-        }
+        result: job.mockResult
       };
     }
 
@@ -129,6 +123,36 @@ export class MockApiClient implements ApiClient {
     }
 
     await sleep(800);
-    job.status = "completed";
+    
+    const isGeo = job.type === "georeferenced";
+    const meta: Metadata = {
+      job_id: jobId,
+      mode: isGeo ? "georeferenced" : "relative",
+      units: isGeo ? "metres" : "normalized",
+      width: 256,
+      height: 256,
+      height_min: isGeo ? 10 : 0,
+      height_max: isGeo ? 50 : 1,
+      heightmap_encoding: "16-bit grayscale PNG; value = height_min + (px/65535)*(height_max-height_min)",
+      pixel_size_m: isGeo ? 0.5 : undefined,
+      mean_confidence: 0.95,
+      classes: isGeo ? {
+        "ground": { rmse: 2.1, n_ref: 50, scale: 1.0, shift: 0.0 },
+        "vegetation": { rmse: 4.5, n_ref: 30, scale: 1.1, shift: 0.5 }
+      } : {},
+      files: {
+        "heightmap": `/api/v1/jobs/${jobId}/heightmap.png`,
+        "confidence": `/api/v1/jobs/${jobId}/confidence.png`,
+      }
+    };
+
+    job.mockResult = {
+      heightmapUrl: generateFakeHeightmap(256, 256),
+      confidenceUrl: undefined,
+      textureUrl: undefined,
+      meta,
+    };
+
+    job.status = "done";
   }
 }

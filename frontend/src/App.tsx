@@ -1,4 +1,3 @@
-import React, { useRef } from 'react';
 import './App.css';
 import { UploadFlow } from './components/UploadFlow';
 import { TerrainViewer } from './components/TerrainViewer';
