@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import { UploadFlow } from './components/UploadFlow';
+import { TerrainViewer } from './components/TerrainViewer';
 import { useAppStore } from './store';
 import { isMockMode } from './api';
 
@@ -13,15 +14,7 @@ function App() {
       {!result ? (
         <UploadFlow />
       ) : (
-        <div className="centered">
-          <div className="mono-data" style={{ color: "var(--fg-1)" }}>
-            3D Viewer goes here...
-          </div>
-          {/* Temporary debug view for result */}
-          <pre style={{ textAlign: "left", fontSize: "10px", marginTop: "16px", color: "var(--fg-2)" }}>
-            {JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
+        <TerrainViewer />
       )}
 
       {/* Status Bar */}
