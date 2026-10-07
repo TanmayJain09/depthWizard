@@ -14,3 +14,5 @@ pydantic
 python-dotenv
 pytest
 httpx
+pandas
+jupyter
