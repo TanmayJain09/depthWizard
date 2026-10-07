@@ -130,7 +130,82 @@
   transition: width 0.3s ease;
 }
 
-/* Status Bar */
+/* Layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+}
+
+.main-viewport {
+  flex: 1;
+  position: relative;
+  height: calc(100vh - 28px);
+}
+
+.tool-rail {
+  width: 48px;
+  background-color: var(--bg-1);
+  border-right: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--sp-2);
+  z-index: 10;
+  height: calc(100vh - 28px);
+}
+
+.tool-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-1);
+  padding: var(--sp-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--sp-1);
+}
+
+.tool-btn:hover {
+  color: var(--fg-0);
+  background-color: var(--bg-2);
+}
+
+.tool-btn.active {
+  color: var(--accent);
+  background-color: rgba(255, 106, 43, 0.1);
+}
+
+.inspector-panel {
+  width: 320px;
+  background-color: var(--bg-1);
+  border-left: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  height: calc(100vh - 28px);
+  overflow-y: auto;
+}
+
+.inspector-header {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-hairline);
+  background-color: var(--bg-2);
+}
+
+.inspector-section {
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+/* Make sure the viewer container handles absolute correctly */
+.viewer-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Bottom Status Bar */
 .status-bar {
   position: absolute;
   bottom: 0;
@@ -161,3 +236,4 @@
   padding: 0 4px;
   font-weight: bold;
 }
+

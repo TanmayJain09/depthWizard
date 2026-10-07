@@ -15,10 +15,18 @@ interface AppState {
   jobError: string | null;
   result: JobResult["result"] | null;
   
+  // Viewer state
+  activeTool: "navigate" | "measure" | "slope" | "profile" | "validate";
+  exaggeration: number;
+  cameraMode: "orbit" | "fly";
+
   // Actions
   setFile: (file: File) => void;
   setReferenceFile: (file: File) => void;
   setCalibrateMode: (mode: "none" | "georeferenced" | "relative") => void;
+  setActiveTool: (tool: AppState["activeTool"]) => void;
+  setExaggeration: (val: number) => void;
+  setCameraMode: (mode: AppState["cameraMode"]) => void;
   startJob: () => Promise<void>;
   reset: () => void;
 }
@@ -35,9 +43,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   jobError: null,
   result: null,
 
+  activeTool: "navigate",
+  exaggeration: 1.0,
+  cameraMode: "orbit",
+
   setFile: (file) => set({ selectedFile: file }),
   setReferenceFile: (file) => set({ referenceFile: file }),
   setCalibrateMode: (mode) => set({ calibrateMode: mode }),
+  setActiveTool: (tool) => set({ activeTool: tool }),
+  setExaggeration: (val) => set({ exaggeration: val }),
+  setCameraMode: (mode) => set({ cameraMode: mode }),
   reset: () => set({ 
     selectedFile: null, 
     referenceFile: null, 
