@@ -116,9 +116,15 @@ function FlyCamera() {
 }
 
 export function TerrainViewer() {
-  const { result, selectedFile, cameraMode, exaggeration } = useAppStore();
+  const { result, selectedFile, cameraMode, exaggeration, activeTool } = useAppStore();
   const [grid, setGrid] = useState<TerrainGrid | null>(null);
   const [textureUrl, setTextureUrl] = useState<string | null>(null);
+
+  // Refs for high-frequency DOM updates
+  const readoutRef = useRef<HTMLDivElement>(null);
+  
+  // Measurement state (low frequency, safe for React state)
+  const [measurePoints, setMeasurePoints] = useState<THREE.Vector3[]>([]);
 
   useEffect(() => {
     if (selectedFile) {
@@ -139,19 +145,86 @@ export function TerrainViewer() {
     load();
   }, [result]);
 
+  const handlePointerMove = (e: any) => {
+    if (!readoutRef.current || !grid) return;
+    const intersects = e.intersections;
+    if (intersects.length > 0) {
+      const p = intersects[0].point;
+      const uv = intersects[0].uv;
+      
+      const px = Math.floor(uv.x * grid.width);
+      const py = Math.floor((1.0 - uv.y) * grid.height);
+      const h = grid.data[py * grid.width + px];
+      
+      const isGeo = result?.meta?.units === "m";
+      let text = `X: ${px} Y: ${py} | H: ${h.toFixed(2)}${isGeo ? "m" : ""}`;
+      
+      if (isGeo && result?.meta?.transform) {
+        const [x0, dx, , y0, , dy] = result.meta.transform;
+        const lon = x0 + px * dx;
+        const lat = y0 + py * dy;
+        text += ` | Lat: ${lat.toFixed(5)} Lon: ${lon.toFixed(5)}`;
+      }
+      
+      readoutRef.current.innerText = text;
+    }
+  };
+
+  const handleClick = (e: any) => {
+    if (activeTool === "measure") {
+      const intersects = e.intersections;
+      if (intersects.length > 0) {
+        const p = intersects[0].point.clone();
+        setMeasurePoints(prev => {
+          if (prev.length >= 2) return [p]; // restart
+          return [...prev, p];
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    // clear points if tool changes
+    if (activeTool !== "measure") {
+      setMeasurePoints([]);
+    }
+  }, [activeTool]);
+
   if (!grid) return <div className="centered"><div className="mono-data" style={{ color: "var(--fg-1)" }}>Parsing Terrain...</div></div>;
+
+  let distText = "";
+  if (measurePoints.length === 2) {
+    const d = measurePoints[0].distanceTo(measurePoints[1]);
+    distText = `Distance: ${d.toFixed(2)}`;
+  }
 
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
       <Canvas
         camera={{ position: [0, 500, 500], near: 0.1, far: 10000 }}
         style={{ background: "var(--bg-0)" }}
+        onPointerMove={handlePointerMove}
+        onClick={handleClick}
       >
         <ambientLight intensity={0.2} />
         <directionalLight position={[1000, 1000, 500]} intensity={1.5} />
         <fog attach="fog" args={["#0D1013", 1000, 4000]} />
         
         <TerrainMesh grid={grid} textureUrl={textureUrl} exaggeration={exaggeration} />
+        
+        {measurePoints.map((p, i) => (
+          <mesh key={i} position={p}>
+            <sphereGeometry args={[5, 16, 16]} />
+            <meshBasicMaterial color="#FF6A2B" depthTest={false} />
+          </mesh>
+        ))}
+
+        {measurePoints.length === 2 && (
+          <line>
+            <bufferGeometry attach="geometry" {...new THREE.BufferGeometry().setFromPoints(measurePoints)} />
+            <lineBasicMaterial attach="material" color="#FF6A2B" linewidth={3} depthTest={false} />
+          </line>
+        )}
         
         {cameraMode === "orbit" ? (
           <MapControls 
@@ -171,6 +244,16 @@ export function TerrainViewer() {
             Click canvas to fly. WASD to move. Q/E for altitude. Shift to sprint. Esc to unlock.
           </div>
         )}
+        {activeTool === "measure" && measurePoints.length === 2 && (
+          <div className="mono-data" style={{ color: "var(--ok)", fontSize: "12px", background: "rgba(0,0,0,0.5)", padding: "8px", borderRadius: "4px", marginTop: "8px" }}>
+            {distText}
+          </div>
+        )}
+      </div>
+      <div style={{ position: "absolute", bottom: 16, left: 16, zIndex: 10, pointerEvents: "none" }}>
+        <div ref={readoutRef} className="mono-data" style={{ color: "var(--fg-1)", fontSize: "11px", background: "rgba(0,0,0,0.5)", padding: "4px", borderRadius: "4px" }}>
+          Hover over terrain
+        </div>
       </div>
     </div>
   );
