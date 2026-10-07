@@ -103,6 +103,7 @@ def write_outputs(jid, out: dict, pixel_size_m=None) -> dict:
     # ------------------------------------------------------------------
 
     H, W = dsm.shape
+    geo = out["geo"]
 
     base = f"/api/v1/jobs/{jid}"
 
@@ -148,6 +149,10 @@ def write_outputs(jid, out: dict, pixel_size_m=None) -> dict:
         # Use the explicitly supplied pixel_size_m when available.
         # Otherwise fall back to the value calculated by geo.
         "pixel_size_m": pixel_size_m or geo["pixel_size_m"],
+        "is_georeferenced": geo["is_georeferenced"],
+        "crs": geo["crs"],
+        "bounds_wgs84": geo["bounds_wgs84"],
+        "srtm_error": geo.get("srtm_error"),
 
         # --------------------------------------------------------------
         # Confidence / classification

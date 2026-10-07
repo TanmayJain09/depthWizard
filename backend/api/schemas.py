@@ -37,3 +37,4 @@ class Metadata(BaseModel):
     is_georeferenced: bool
     crs: Optional[str] = None
     bounds_wgs84: Optional[List[float]] = None
+    srtm_error: Optional[str] = None
