@@ -1,0 +1,16 @@
+numpy
+scipy
+rasterio
+torch
+torchvision
+transformers
+pillow
+opencv-python
+matplotlib
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+python-dotenv
+pytest
+httpx
