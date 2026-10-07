@@ -1,4 +1,7 @@
+import React from 'react';
 import type { ToolMode } from "./ToolRail";
+
+const ValidationPanel = React.lazy(() => import('./ValidationPanel'));
 
 interface InspectorPanelProps {
   activeTool: ToolMode;
@@ -68,7 +71,11 @@ export function InspectorPanel({
         </div>
       )}
       
-      {/* Additional tool panels would go here */}
+      {activeTool === "validate" && (
+        <React.Suspense fallback={<div className="mono-data">Loading validation...</div>}>
+          <ValidationPanel />
+        </React.Suspense>
+      )}
       
     </div>
   );

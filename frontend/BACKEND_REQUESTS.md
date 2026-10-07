@@ -15,3 +15,7 @@ The new 16-bit `heightmap.png` outputs are decoded linearly by the frontend usin
 ## 3. CORS Configuration
 For local development, the frontend Vite server runs on `http://localhost:5173`. We currently proxy requests via Vite, but for the packaged Electron build, we hit the API directly.
 - **Request:** Please ensure that CORS is enabled in the FastAPI backend, at least for local development loops and the packaged app environment.
+## 4. Vertical Datum and DSM semantics
+When performing client-side validation against a reference DSM, we need to know exactly what the predicted heights represent.
+- **Question:** Is the output `calibrated_georeference` an absolute elevation (DSM) or a height above ground (nDSM)?
+- **Question:** What is the specific vertical datum used (e.g., WGS84 ellipsoid, EGM96 geoid, local datum)? Does the API align the prediction to the reference DSM's datum if uploaded during inference?

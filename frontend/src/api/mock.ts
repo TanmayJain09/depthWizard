@@ -136,6 +136,8 @@ export class MockApiClient implements ApiClient {
       heightmap_encoding: "16-bit grayscale PNG; value = height_min + (px/65535)*(height_max-height_min)",
       pixel_size_m: isGeo ? 0.5 : undefined,
       mean_confidence: 0.95,
+      crs: isGeo ? "EPSG:32755" : undefined,
+      transform: isGeo ? [144.9631, 0.5, 0, -37.8136, 0, -0.5] : undefined,
       classes: isGeo ? {
         "ground": { rmse: 2.1, n_ref: 50, scale: 1.0, shift: 0.0 },
         "vegetation": { rmse: 4.5, n_ref: 30, scale: 1.1, shift: 0.5 }

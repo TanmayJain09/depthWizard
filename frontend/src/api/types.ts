@@ -34,6 +34,8 @@ export const MetadataSchema = z.object({
   heightmap_encoding: z.string(),
   pixel_size_m: z.number().nullable().optional(),
   mean_confidence: z.number(),
+  crs: z.string().nullable().optional(),
+  transform: z.array(z.number()).length(6).nullable().optional(),
   classes: z.record(z.string(), ClassStatsSchema),
   files: z.record(z.string(), z.string()),
 });

@@ -6,7 +6,7 @@ import { useAppStore } from "../store";
 import type { TerrainGrid } from "../core/terrain";
 import type { MeshBuildResult, MeshBuildParams } from "../core/terrain.worker";
 
-function TerrainMesh({ meta, heightmapUrl, textureUrl, exaggeration, onGridParsed }: { meta: any, heightmapUrl: string, textureUrl: string | null, exaggeration: number, onGridParsed: (grid: TerrainGrid) => void }) {
+function TerrainMesh({ meta, heightmapUrl, textureUrl, errorTextureData, showErrorMap, exaggeration, onGridParsed }: { meta: any, heightmapUrl: string, textureUrl: string | null, errorTextureData: Uint8Array | null, showErrorMap: boolean, exaggeration: number, onGridParsed: (grid: TerrainGrid) => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const geomRef = useRef<THREE.BufferGeometry>(null);
   const [built, setBuilt] = useState(false);
@@ -17,6 +17,22 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, exaggeration, onGridParse
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = 16;
   }
+
+  const [errorTex, setErrorTex] = useState<THREE.DataTexture | null>(null);
+  useEffect(() => {
+    if (errorTextureData) {
+      const dt = new THREE.DataTexture(errorTextureData, meta.width, meta.height, THREE.RGBAFormat);
+      dt.needsUpdate = true;
+      dt.magFilter = THREE.LinearFilter;
+      dt.minFilter = THREE.LinearFilter;
+      setErrorTex(dt);
+    } else {
+      setErrorTex(null);
+    }
+    return () => {
+      if (errorTex) errorTex.dispose();
+    };
+  }, [errorTextureData, meta.width, meta.height]);
 
   // Initial build via worker
   useEffect(() => {
@@ -46,7 +62,7 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, exaggeration, onGridParse
       height: meta.height,
       minHeight: meta.height_min,
       maxHeight: meta.height_max,
-      exaggeration: 1.0, // baseline
+      exaggeration: 1.0, 
     } as MeshBuildParams);
 
     return () => worker.terminate();
@@ -79,7 +95,9 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, exaggeration, onGridParse
   return (
     <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]}>
       <bufferGeometry ref={geomRef} />
-      {built && texture ? (
+      {built && showErrorMap && errorTex ? (
+        <meshStandardMaterial map={errorTex} side={THREE.DoubleSide} transparent={true} />
+      ) : built && texture ? (
         <meshStandardMaterial map={texture} side={THREE.DoubleSide} wireframe={false} />
       ) : (
         <meshStandardMaterial color="#6B747C" wireframe={true} />
@@ -129,13 +147,15 @@ function FlyCamera() {
 export function TerrainViewer() {
   const { result, selectedFile, cameraMode, exaggeration, activeTool } = useAppStore();
   const [grid, setGrid] = useState<TerrainGrid | null>(null);
-  const [textureUrl, setTextureUrl] = useState<string | null>(null);
+  // Validation store data
+  const { validationMetrics } = useAppStore();
+  const [showErrorMap, setShowErrorMap] = useState(false);
 
-  // Refs for high-frequency DOM updates
-  const readoutRef = useRef<HTMLDivElement>(null);
-  
-  // Measurement state (low frequency, safe for React state)
-  const [measurePoints, setMeasurePoints] = useState<THREE.Vector3[]>([]);
+  // We can track grid in window for the ValidationPanel hack, or we can use a callback.
+  const handleGridParsed = (g: TerrainGrid) => {
+    setGrid(g);
+    (window as any)._currentGridData = g.data;
+  };
 
   useEffect(() => {
     if (selectedFile) {
@@ -145,9 +165,6 @@ export function TerrainViewer() {
       if (textureUrl) URL.revokeObjectURL(textureUrl);
     };
   }, [selectedFile]);
-
-  // Grid is now populated by the worker callback to keep the main thread clean during initial load
-  // We still keep the state here for the measure/hover readouts.
 
   const handlePointerMove = (e: any) => {
     if (!readoutRef.current || !grid) return;
@@ -162,11 +179,14 @@ export function TerrainViewer() {
       const isGeo = result?.meta?.units === "metres";
       let text = `X: ${px} Y: ${py} | H: ${h.toFixed(2)}${isGeo ? "m" : ""}`;
       
-      if (isGeo && result?.meta?.files?.georeferenced) {
-         // TODO: We could use the actual GeoTIFF for Lat/Lon, but for now we skip transform lookup
-         // if it's not in the metadata.
+      // If error map is active, show the error at cursor
+      if (showErrorMap && validationMetrics?.errorMap) {
+        const err = validationMetrics.errorMap[py * grid.width + px];
+        if (!Number.isNaN(err)) {
+          text += ` | Err: ${err > 0 ? '+' : ''}${err.toFixed(2)}m`;
+        }
       }
-      
+
       readoutRef.current.innerText = text;
     }
   };
@@ -214,9 +234,11 @@ export function TerrainViewer() {
         <TerrainMesh 
           meta={result.meta}
           heightmapUrl={result.heightmapUrl}
-          textureUrl={result.textureUrl || textureUrl} 
+          textureUrl={result.textureUrl || textureUrl}
+          errorTextureData={validationMetrics?.errorTexture || null}
+          showErrorMap={showErrorMap}
           exaggeration={exaggeration} 
-          onGridParsed={setGrid}
+          onGridParsed={handleGridParsed}
         />
         
         {measurePoints.map((p, i) => (

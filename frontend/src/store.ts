@@ -32,8 +32,24 @@ interface AppState {
   setExaggeration: (val: number) => void;
   setCameraMode: (mode: AppState["cameraMode"]) => void;
   startJob: () => Promise<void>;
-  reset: () => void;
+  // Validation
+  validationRefFile: File | null;
+  validationStatus: "idle" | "running" | "error";
+  validationError: string | null;
+  validationMetrics: any | null; // from ValidationResult
+  validationNodata: number | undefined;
+  showErrorMap: boolean;
+  
+  // Actions
+  setValidationRefFile: (file: File | null) => void;
+  setValidationNodata: (val: number | undefined) => void;
+  setShowErrorMap: (val: boolean) => void;
+  runValidation: (predData: Float32Array) => Promise<void>;
+  cancelValidation: () => void;
 }
+
+// Keep a reference to the active worker so we can cancel it
+let activeValidationWorker: Worker | null = null;
 
 export const useAppStore = create<AppState>((set, get) => ({
   selectedFile: null,
@@ -52,6 +68,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   exaggeration: 1.0,
   cameraMode: "orbit",
 
+  validationRefFile: null,
+  validationStatus: "idle",
+  validationError: null,
+  validationMetrics: null,
+  validationNodata: undefined,
+  showErrorMap: false,
+
   setFile: (file) => set({ selectedFile: file }),
   setLabelsFile: (file) => set({ labelsFile: file }),
   setReferenceFile: (file) => set({ referenceFile: file }),
@@ -59,6 +82,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveTool: (tool) => set({ activeTool: tool }),
   setExaggeration: (val) => set({ exaggeration: val }),
   setCameraMode: (mode) => set({ cameraMode: mode }),
+  setValidationRefFile: (file) => set({ validationRefFile: file, validationMetrics: null, validationError: null, validationStatus: "idle" }),
+  setValidationNodata: (val) => set({ validationNodata: val }),
+  setShowErrorMap: (val) => set({ showErrorMap: val }),
+  
+  cancelValidation: () => {
+    if (activeValidationWorker) {
+      activeValidationWorker.terminate();
+      activeValidationWorker = null;
+    }
+    set({ validationStatus: "idle", validationError: "Validation cancelled." });
+  },
+
   reset: () => set({ 
     selectedFile: null, 
     labelsFile: null,
@@ -68,6 +103,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     result: null,
     jobProgress: 0,
     jobError: null,
+    validationRefFile: null,
+    validationMetrics: null,
+    validationStatus: "idle"
   }),
 
   startJob: async () => {
@@ -110,6 +148,65 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     } catch (err: any) {
       set({ jobStatus: "failed", jobError: err.message });
+    }
+  },
+
+  runValidation: async (predData: Float32Array) => {
+    const { validationRefFile, result, validationNodata } = get();
+    if (!validationRefFile || !result?.meta) return;
+
+    set({ validationStatus: "running", validationError: null, validationMetrics: null });
+
+    if (activeValidationWorker) {
+      activeValidationWorker.terminate();
+    }
+
+    try {
+      const refBuffer = await validationRefFile.arrayBuffer();
+      
+      // Fetch confidence if available for filtering
+      let confData: Uint8Array | null = null;
+      if (result.meta.files?.confidence) {
+        const cRes = await fetch(result.meta.files.confidence);
+        if (cRes.ok) {
+          const ab = await cRes.arrayBuffer();
+          // Assuming the confidence map was also decoded similarly or we just pass the raw buffer to the worker
+          // Actually, passing raw png buffer requires worker to decode it. Let's just pass the png buffer and let worker decode it.
+          // I will modify the worker to decode the confidence PNG if passed as ArrayBuffer.
+          const { decode } = await import("fast-png");
+          const cPng = decode(ab);
+          confData = cPng.data as Uint8Array;
+        }
+      }
+
+      const worker = new Worker(new URL("./core/validation.worker.ts", import.meta.url), { type: "module" });
+      activeValidationWorker = worker;
+
+      worker.onmessage = (e) => {
+        if (e.data.status === "error") {
+          set({ validationStatus: "error", validationError: e.data.error });
+        } else {
+          set({ validationStatus: "idle", validationMetrics: e.data.result });
+        }
+        activeValidationWorker = null;
+      };
+
+      worker.postMessage({
+        refBuffer,
+        predData,
+        predWidth: result.meta.width,
+        predHeight: result.meta.height,
+        predCrs: result.meta.crs || null,
+        predTransform: result.meta.transform || null,
+        predNodata: undefined, // FIXME: from meta if available
+        confData,
+        nodataOverride: validationNodata,
+        confThreshold: 0.8 // could be configurable via state later
+      });
+      
+    } catch (err: any) {
+      set({ validationStatus: "error", validationError: err.message });
+      activeValidationWorker = null;
     }
   }
 }));
