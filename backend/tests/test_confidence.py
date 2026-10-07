@@ -25,7 +25,10 @@ def test_confidence_outputs():
     assert np.all((out["confidence"] >= 0) & (out["confidence"] <= 1))
     assert np.all(out["lower"] < out["upper"])
     assert np.allclose(out["sigma"][labels == BUILDING], res.residual_std[BUILDING])
-    assert set(class_summary(res)) == {"ground", "building"}
+    summary = class_summary(res)
+    assert set(summary) == {"ground", "vegetation", "building", "water"}
+    assert summary["vegetation"]["n_ref"] == 0      # absent class falls back to the global fit
+    assert summary["building"]["n_ref"] > 0
 
 
 def test_interval_coverage_near_nominal():
