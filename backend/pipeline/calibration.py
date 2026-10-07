@@ -45,10 +45,18 @@ def calibrate_georeferenced(depth, labels, reference, valid = None) -> Calibrati
     
     ga,gb = np.polyfit(depth[ok],reference[ok],1)
 
-    param , resid = {} , {}
+    params , resid = {} , {}
     
     for cid in CLASS_NAMES : 
         m = ok & (labels == cid)
+        if m.sum() >= MIN_POINTS : 
+            a,b = np.polyfit(depth[m], reference[m], 1)
+        else :
+            a,b = ga,gb
+
+        params[cid] = (float(a),float(b))
+        pts = labels == cid
+        
         if m.sum() > 0 : 
             resid[cid] = float(np.std(reference[m] - (a*depth[m] + b)))
         else : 
