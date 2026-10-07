@@ -34,3 +34,6 @@ class Metadata(BaseModel):
     mean_confidence: float
     classes: Dict[str, ClassStats]
     files: Dict[str, str]      # name -> absolute path under the API
+    is_georeferenced: bool
+    crs: Optional[str] = None
+    bounds_wgs84: Optional[List[float]] = None

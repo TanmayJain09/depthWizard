@@ -4,10 +4,12 @@ import numpy as np
 from .calibration import calibrate_georeferenced, calibrate_relative
 from .confidence import build_confidence, class_summary
 from .depth_inference import predict_relative_depth
-from .input_handler import check_shapes, load_image, load_labels, load_reference
-
+from .input_handler import (check_shapes, load_image, load_labels,
+                            load_reference, inspect_georef, _as_path_or_bytes)
 
 def run_pipeline(image_src, labels_src, reference_src=None, dfc_labels=False, robust=False):
+    image_src = _as_path_or_bytes(image_src)     # read the upload once
+    geo = inspect_georef(image_src)              # <-- the is_georeferenced flag
     image = load_image(image_src)
     labels = load_labels(labels_src, dfc=dfc_labels)
     depth = predict_relative_depth(image)

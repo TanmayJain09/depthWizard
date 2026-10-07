@@ -12,12 +12,38 @@ import numpy as np
 import rasterio
 from PIL import Image
 from rasterio.io import MemoryFile
-
+from rasterio.warp import transform_bounds
 from .segmentation import IGNORE, remap_dfc_labels
 
 MAX_PIXELS = 4096 * 4096
 _TIFF_MAGIC = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")
 
+def inspect_georef(source) -> dict:
+    """Stage 1: detect georeferencing. Only TIFFs can carry it."""
+    info = {"is_georeferenced": False, "crs": None,
+            "pixel_size_m": None, "bounds_wgs84": None}
+    src = _as_path_or_bytes(source)
+    if not _is_tiff(src):
+        return info
+    def _inspect(ds):
+        if ds.crs is None or ds.transform.is_identity:
+            return info
+        info["is_georeferenced"] = True
+        info["crs"] = ds.crs.to_string()
+        left, bottom, right, top = ds.bounds
+        if ds.crs.is_geographic:                 # degrees -> metres
+            import math
+            lat = (top + bottom) / 2
+            info["pixel_size_m"] = abs(ds.res[1]) * 111_320
+        else:
+            info["pixel_size_m"] = abs(ds.res[0]) * ds.crs.linear_units_factor[1]
+        info["bounds_wgs84"] = list(transform_bounds(ds.crs, "EPSG:4326", *ds.bounds))
+        return info
+    if isinstance(src, bytes):
+        with MemoryFile(src) as mf, mf.open() as ds:
+            return _inspect(ds)
+    with rasterio.open(src) as ds:
+        return _inspect(ds)
 
 def _as_path_or_bytes(source):
     if hasattr(source, "read"):          # e.g. FastAPI UploadFile.file
