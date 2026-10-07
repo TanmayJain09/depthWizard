@@ -31,7 +31,7 @@ def predict_relative_depth(image : Image.Image) -> np.ndarray :
     inputs = processor(images = image, return_tensors = "pt").to(DEVICE)
 
     with torch.no_grad():
-        outputs = model(**input)
+        outputs = model(**inputs)
 
     depth = torch.nn.functional.interpolate(
         outputs.predicted_depth.unsqueeze(1),
