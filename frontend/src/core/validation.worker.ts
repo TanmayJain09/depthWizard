@@ -15,6 +15,8 @@ export interface ValidationWorkerParams {
   confData: Uint8Array | null;
   nodataOverride?: number;
   confThreshold: number; // e.g. 0.8
+  minHeight: number;
+  maxHeight: number;
 }
 
 export interface ValidationMetrics {
@@ -57,7 +59,7 @@ self.onmessage = async (e: MessageEvent<ValidationWorkerParams>) => {
       refCrs = `EPSG:${geoKeys.GeographicTypeGeoKey}`;
     }
 
-    const fd = image.getFileDirectory();
+    const fd: any = image.getFileDirectory();
     let refTransform: number[] | null = null;
     if (fd.ModelPixelScale && fd.ModelTiepoint) {
       refTransform = [
@@ -317,37 +319,86 @@ self.onmessage = async (e: MessageEvent<ValidationWorkerParams>) => {
       }
     }
 
-    // Generate Error Texture (RGBA)
+    // Generate Error Texture and Ref Data
     const errorTexture = new Uint8Array(p.predWidth * p.predHeight * 4);
-    // Diverging colormap: blue (negative) -> transparent (zero) -> red (positive)
-    // Scale max error to say, 3 * RMSE for visual bounds
+    const resampledRefData = new Float32Array(p.predWidth * p.predHeight);
+    
     const maxVisErr = (allM ? allM.rmse * 3 : 10) || 10;
     
     for (let i = 0; i < errorMap.length; i++) {
       const e = errorMap[i];
       const idx = i * 4;
+      
       if (Number.isNaN(e)) {
         errorTexture[idx] = 0;
         errorTexture[idx + 1] = 0;
         errorTexture[idx + 2] = 0;
-        errorTexture[idx + 3] = 0; // transparent
+        errorTexture[idx + 3] = 0; 
+        resampledRefData[i] = NaN; // Or predNodata?
       } else {
-        const norm = Math.max(-1, Math.min(1, e / maxVisErr)); // -1 to 1
+        resampledRefData[i] = p.predData[i] - e;
+        const norm = Math.max(-1, Math.min(1, e / maxVisErr)); 
         if (norm < 0) {
-          // Negative (blue)
           errorTexture[idx] = 0;
           errorTexture[idx + 1] = 100;
           errorTexture[idx + 2] = 255;
-          errorTexture[idx + 3] = Math.floor(Math.abs(norm) * 200 + 55); // Alpha
+          errorTexture[idx + 3] = Math.floor(Math.abs(norm) * 200 + 55); 
         } else {
-          // Positive (red)
           errorTexture[idx] = 255;
           errorTexture[idx + 1] = 50;
           errorTexture[idx + 2] = 0;
-          errorTexture[idx + 3] = Math.floor(norm * 200 + 55); // Alpha
+          errorTexture[idx + 3] = Math.floor(norm * 200 + 55); 
         }
       }
     }
+
+    // Stratified Metrics
+    const stratSlope: any = { flat: { count: 0, sumSq: 0 }, moderate: { count: 0, sumSq: 0 }, steep: { count: 0, sumSq: 0 } };
+    const stratHeight: any = { low: { count: 0, sumSq: 0 }, mid: { count: 0, sumSq: 0 }, high: { count: 0, sumSq: 0 } };
+    const stratConf: any = { low: { count: 0, sumSq: 0 }, high: { count: 0, sumSq: 0 } };
+    
+    for (let y = 1; y < p.predHeight - 1; y++) {
+      for (let x = 1; x < p.predWidth - 1; x++) {
+        const i = y * p.predWidth + x;
+        const r = refData[i];
+        if (Number.isNaN(r)) continue;
+        const e = errorMap[i];
+        if (Number.isNaN(e)) continue;
+
+        const dx = (refData[i + 1] - refData[i - 1]) / 2.0;
+        const dy = (refData[i + p.predWidth] - refData[i - p.predWidth]) / 2.0;
+        const slopePct = Math.sqrt(dx*dx + dy*dy); 
+
+        if (slopePct < 0.05) { stratSlope.flat.count++; stratSlope.flat.sumSq += e*e; }
+        else if (slopePct < 0.15) { stratSlope.moderate.count++; stratSlope.moderate.sumSq += e*e; }
+        else { stratSlope.steep.count++; stratSlope.steep.sumSq += e*e; }
+
+        const hNorm = (r - p.minHeight) / (p.maxHeight - p.minHeight);
+        if (hNorm < 0.33) { stratHeight.low.count++; stratHeight.low.sumSq += e*e; }
+        else if (hNorm < 0.66) { stratHeight.mid.count++; stratHeight.mid.sumSq += e*e; }
+        else { stratHeight.high.count++; stratHeight.high.sumSq += e*e; }
+        
+        if (p.confData) {
+          const cv = p.confData[i] / 255.0;
+          if (cv < p.confThreshold) { stratConf.low.count++; stratConf.low.sumSq += e*e; }
+          else { stratConf.high.count++; stratConf.high.sumSq += e*e; }
+        }
+      }
+    }
+
+    const calcStratRmse = (strat: any) => {
+      const res: any = {};
+      for (const k in strat) {
+        res[k] = strat[k].count > 0 ? Math.sqrt(strat[k].sumSq / strat[k].count) : NaN;
+      }
+      return res;
+    };
+
+    const stratified = {
+      slopeRmse: calcStratRmse(stratSlope),
+      heightRmse: calcStratRmse(stratHeight),
+      confRmse: p.confData ? calcStratRmse(stratConf) : null
+    };
 
     self.postMessage({
       status: "done",
@@ -356,13 +407,16 @@ self.onmessage = async (e: MessageEvent<ValidationWorkerParams>) => {
         confident: confM,
         biasCorrectedRmse,
         overlapPercent,
+        stratified,
         errorMap,
         histogram,
         scatter,
         errorTexture,
+        refData: resampledRefData,
         maxVisErr
       }
-    }, { transfer: [errorMap.buffer, errorTexture.buffer] });
+    }, { transfer: [errorMap.buffer, errorTexture.buffer, resampledRefData.buffer] });
+
 
   } catch (err: any) {
     self.postMessage({ status: "error", error: err.message });

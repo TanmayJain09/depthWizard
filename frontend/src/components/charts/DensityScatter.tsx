@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export interface ScatterPoint {
   x: number;
@@ -61,7 +61,7 @@ export function DensityScatter({ data, width = 250, height = 250 }: { data: Scat
       const g = Math.floor(106 * density + 150 * (1 - density)); // mix towards some base
       const b = Math.floor(43 * density + 200 * (1 - density));
       
-      ctx.fillStyle = `rgba(${r}, 100, 200, ${density + 0.1})`;
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${density + 0.1})`;
       ctx.fillRect(scaleX(d.x) - binSizeX/2, scaleY(d.y) - binSizeY/2, binSizeX, binSizeY);
     });
 

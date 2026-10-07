@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# DepthWizard Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A desktop Electron application for 3D terrain visualization, predicting heightmaps, and analyzing prediction accuracy against reference LiDAR GeoTIFFs.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Backend Integration**: Communicates via IPC from the Electron Renderer to the Main process, ensuring secure and CORS-free requests to the DepthWizard API. Configure the backend URL in the Settings Dialog.
+- **Offline CRS/Georeferencing**: Bundled with a local coordinate reference system dictionary containing all UTM zones (EPSG:326xx, 327xx) and common CRSes (4326, 3857) allowing completely offline geospatial alignment without external API calls.
+- **Validation**: Upload a reference GeoTIFF, reproject/resample it against the predicted surface, and compare accuracy (RMSE, MAE, pixel counts) dynamically by regions and confidence thresholds.
+- **Tools**: Includes measuring tools, bookmarks, auto-tour camera features, slope overlays, profile charting, and 2D swipe comparison for predictions versus ground truth.
+- **Exporting**: Export screenshots, OBJ mesh data, and original calibrated GeoTIFF prediction results directly from the backend.
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the Oxlint configuration
+# Run Vite dev server
+npm run dev
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# Run Electron app in dev mode
+npm run electron:start
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Packaging for Production
+
+This project uses `electron-builder` to package the app.
+
+```bash
+# Compile TS, bundle via Vite, and package into an AppImage / executable
+npm run electron:build
+```
+
+The resulting executables will be generated in `dist-electron/`.
+
+## Manual Verification (Packaged Binary)
+
+You can find the packaged binary for Linux as an `.AppImage` in the `dist-electron/` folder. Run it directly to verify offline functionality, backend connectivity, settings persistence, and metrics computation.

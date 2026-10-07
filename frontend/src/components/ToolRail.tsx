@@ -1,6 +1,6 @@
-import { Navigation, Ruler, TrendingUp, Activity, CheckSquare } from "lucide-react";
+import { Navigation, Ruler, TrendingUp, Activity, CheckSquare, Download } from "lucide-react";
 
-export type ToolMode = "navigate" | "measure" | "slope" | "profile" | "validate";
+export type ToolMode = "navigate" | "measure" | "slope" | "profile" | "validate" | "export";
 
 interface ToolRailProps {
   activeTool: ToolMode;
@@ -14,6 +14,7 @@ export function ToolRail({ activeTool, onSelect }: ToolRailProps) {
     { id: "slope", icon: Activity, label: "Slope Map" },
     { id: "profile", icon: TrendingUp, label: "Profile Line" },
     { id: "validate", icon: CheckSquare, label: "Validate" },
+    { id: "export", icon: Download, label: "Export & Downloads" },
   ] as const;
 
   return (

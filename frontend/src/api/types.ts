@@ -38,6 +38,9 @@ export const MetadataSchema = z.object({
   transform: z.array(z.number()).length(6).nullable().optional(),
   classes: z.record(z.string(), ClassStatsSchema),
   files: z.record(z.string(), z.string()),
+  is_georeferenced: z.boolean(),
+  bounds_wgs84: z.array(z.number()).nullable().optional(),
+  srtm_error: z.string().nullable().optional(),
 });
 export type Metadata = z.infer<typeof MetadataSchema>;
 
@@ -61,6 +64,10 @@ export interface PredictResponse {
 }
 
 export interface ApiClient {
+  ping(): Promise<boolean>;
+  setBaseUrl(url: string): void;
+  getFileUrl(relativePath: string): Promise<string>;
+  
   predict(
     image: File,
     labels?: File,

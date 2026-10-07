@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -11,7 +11,22 @@
     "preview": "vite preview",
     "electron:start": "electron .",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && npm run electron:start\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "test": "vitest run"
+  },
+  "build": {
+    "appId": "com.depthwizard.app",
+    "productName": "DepthWizard",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",
@@ -39,6 +54,7 @@
     "concurrently": "^9.2.4",
     "electron": "^41.7.1",
     "electron-builder": "^26.15.3",
+    "jsdom": "^29.1.1",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",

@@ -1,4 +1,4 @@
-import React from 'react';
+// No imports needed since we use JSX
 
 export interface HistogramBin {
   binStart: number;

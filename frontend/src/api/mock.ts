@@ -38,7 +38,34 @@ function generateFakeHeightmap(width: number, height: number): string {
   return URL.createObjectURL(blob);
 }
 
+function generateFakeTexture(width: number, height: number): string {
+  // Simple RGB mock texture
+  const data = new Uint8Array(width * height * 3);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 3;
+      data[idx] = Math.floor((x / width) * 255);     // R
+      data[idx + 1] = Math.floor((y / height) * 255); // G
+      data[idx + 2] = 128;                           // B
+    }
+  }
+  const pngBuffer = encode({ width, height, data, depth: 8, channels: 3 });
+  const blob = new Blob([pngBuffer as any], { type: "image/png" });
+  return URL.createObjectURL(blob);
+}
+
 export class MockApiClient implements ApiClient {
+  setBaseUrl(_url: string): void {}
+
+  async ping(): Promise<boolean> {
+    await sleep(200);
+    return true;
+  }
+
+  async getFileUrl(relativePath: string): Promise<string> {
+    return relativePath; // Mock result payload generates blob URLs instead of relative paths, so just returning it is fine
+  }
+
   async predict(
     image: File,
     _labels?: File,
@@ -145,13 +172,16 @@ export class MockApiClient implements ApiClient {
       files: {
         "heightmap": `/api/v1/jobs/${jobId}/heightmap.png`,
         "confidence": `/api/v1/jobs/${jobId}/confidence.png`,
-      }
+      },
+      is_georeferenced: isGeo,
+      bounds_wgs84: isGeo ? [144.96, -37.81, 144.97, -37.82] : null,
+      srtm_error: null
     };
 
     job.mockResult = {
       heightmapUrl: generateFakeHeightmap(256, 256),
       confidenceUrl: undefined,
-      textureUrl: undefined,
+      textureUrl: generateFakeTexture(256, 256),
       meta,
     };
 
