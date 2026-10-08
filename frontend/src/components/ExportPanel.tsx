@@ -9,7 +9,7 @@ export function ExportPanel() {
   const downloadFile = async (baseFilename: string, relativePath: string) => {
     try {
       setExporting(true);
-      const url = await api.getFileUrl(relativePath);
+      const url = await api.getFileUrl(result!.meta.job_id, relativePath);
       
       let finalFilename = baseFilename;
       try {
@@ -24,7 +24,7 @@ export function ExportPanel() {
             finalFilename = finalFilename.replace('.jpg', '.tif').replace('.png', '.tif');
           }
         }
-      } catch (e) {
+      } catch {
         // Fallback to baseFilename if HEAD fails
       }
 

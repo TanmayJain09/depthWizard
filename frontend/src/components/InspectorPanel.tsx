@@ -26,6 +26,9 @@ export function InspectorPanel({
   const inputDimensions = useAppStore(s => s.inputDimensions);
   const meta = useAppStore(s => s.result?.meta);
   const showExifWarning = inputDimensions && meta && (inputDimensions.width !== meta.width || inputDimensions.height !== meta.height);
+  const bookmarks = useAppStore(s => s.bookmarks);
+  const isTouring = useAppStore(s => s.isTouring);
+  const tourSpeed = useAppStore(s => s.tourSpeed);
 
   return (
     <div className="inspector-panel">
@@ -76,7 +79,7 @@ export function InspectorPanel({
             <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent("save-bookmark"))}>
               Save Current View
             </button>
-            {useAppStore(s => s.bookmarks).map(b => (
+            {bookmarks.map(b => (
               <div key={b.id} style={{ display: "flex", gap: "4px", alignItems: "center", background: "var(--bg-1)", padding: "4px", borderRadius: "4px" }}>
                 <input 
                   type="text" 
@@ -91,17 +94,17 @@ export function InspectorPanel({
             ))}
             <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "8px" }}>
               <button 
-                className={useAppStore(s => s.isTouring) ? "btn-primary" : "btn-secondary"} 
+                className={isTouring ? "btn-primary" : "btn-secondary"} 
                 onClick={() => useAppStore.getState().setIsTouring(!useAppStore.getState().isTouring)}
                 style={{ flex: 1 }}
               >
-                {useAppStore(s => s.isTouring) ? "Stop Tour" : "Start Auto-Tour"}
+                {isTouring ? "Stop Tour" : "Start Auto-Tour"}
               </button>
-              {useAppStore(s => s.isTouring) && (
+              {isTouring && (
                 <input 
                   type="range" 
                   min="0.1" max="2" step="0.1" 
-                  value={useAppStore(s => s.tourSpeed)} 
+                  value={tourSpeed} 
                   onChange={(e) => useAppStore.getState().setTourSpeed(parseFloat(e.target.value))}
                   style={{ width: "60px" }}
                 />

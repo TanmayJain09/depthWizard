@@ -90,8 +90,8 @@ self.onmessage = async (e: MessageEvent<ValidationWorkerParams>) => {
       if (hasCRS(p.predCrs)) {
         const [minLon, minLat, maxLon, maxLat] = p.predBoundsWgs84;
         const transformFunc = proj4("EPSG:4326", p.predCrs);
-        const [minX, minY] = transformFunc.forward([minLon, minLat]);
-        const [maxX, maxY] = transformFunc.forward([maxLon, maxLat]);
+        const [minX, _minY] = transformFunc.forward([minLon, minLat]);
+        const [_maxX, maxY] = transformFunc.forward([maxLon, maxLat]);
         // Top-left origin: [x0, dx, xskew, y0, yskew, dy]
         // y0 is maxY, dy is -pixelSize
         finalPredTransform = [minX, p.predPixelSize, 0, maxY, 0, -p.predPixelSize];

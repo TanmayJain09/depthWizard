@@ -62,6 +62,8 @@ export interface AppState {
   referenceFile: File | null;
   calibrateMode: "none" | "georeferenced" | "relative";
   useBlankMask: boolean;
+  pixelSizeM: string;
+  robustFit: boolean;
   inputDimensions: { width: number; height: number } | null;
   
   // Job status
@@ -83,6 +85,8 @@ export interface AppState {
   setReferenceFile: (file: File | null) => void;
   setCalibrateMode: (mode: "none" | "georeferenced" | "relative") => void;
   setUseBlankMask: (use: boolean) => void;
+  setPixelSizeM: (val: string) => void;
+  setRobustFit: (val: boolean) => void;
   setActiveTool: (tool: AppState["activeTool"]) => void;
   setExaggeration: (val: number) => void;
   setCameraMode: (mode: AppState["cameraMode"]) => void;
@@ -126,7 +130,7 @@ const defaultSettings: AppSettings = {
 const getSavedSettings = (): AppSettings => {
   const saved = localStorage.getItem("depthwizard_settings");
   if (saved) {
-    try { return { ...defaultSettings, ...JSON.parse(saved) }; } catch (e) {}
+    try { return { ...defaultSettings, ...JSON.parse(saved) }; } catch {}
   }
   return defaultSettings;
 };
@@ -134,7 +138,7 @@ const getSavedSettings = (): AppSettings => {
 const getSavedBookmarks = (): Bookmark[] => {
   const saved = localStorage.getItem("depthwizard_bookmarks");
   if (saved) {
-    try { return JSON.parse(saved); } catch (e) {}
+    try { return JSON.parse(saved); } catch {}
   }
   return [];
 };
@@ -144,6 +148,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSettings: (partial) => set((s) => {
     const next = { ...s.settings, ...partial };
     localStorage.setItem("depthwizard_settings", JSON.stringify(next));
+    if (partial.apiBaseUrl !== undefined && partial.apiBaseUrl !== s.settings.apiBaseUrl) {
+      api.setBaseUrl(partial.apiBaseUrl);
+    }
     return { settings: next };
   }),
 
@@ -176,6 +183,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   referenceFile: null,
   calibrateMode: "none",
   useBlankMask: false,
+  pixelSizeM: "",
+  robustFit: false,
   inputDimensions: null,
   
   jobId: null,
@@ -216,6 +225,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setReferenceFile: (file) => set({ referenceFile: file }),
   setCalibrateMode: (mode) => set({ calibrateMode: mode }),
   setUseBlankMask: (use) => set({ useBlankMask: use }),
+  setPixelSizeM: (val) => set({ pixelSizeM: val }),
+  setRobustFit: (val) => set({ robustFit: val }),
   setActiveTool: (tool) => set({ activeTool: tool }),
   setExaggeration: (val) => set({ exaggeration: val }),
   setCameraMode: (mode) => set({ cameraMode: mode }),
@@ -271,7 +282,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   reset: () => set({ 
     selectedFile: null, 
     labelsFile: null,
-    referenceFile: null, 
+    referenceFile: null,
+    pixelSizeM: "",
+    robustFit: false,
     jobId: null, 
     jobStatus: "idle",
     result: null,
@@ -283,7 +296,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   startJob: async () => {
-    const { selectedFile, labelsFile, referenceFile, calibrateMode, useBlankMask } = get();
+    const { selectedFile, labelsFile, referenceFile, calibrateMode, useBlankMask, robustFit, pixelSizeM } = get();
     if (!selectedFile) return;
 
     try {
@@ -296,7 +309,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       
       set({ jobStage: "Submitting..." });
-      const res = await api.predict(selectedFile, finalLabels, referenceFile || undefined, calibrateMode !== "none" ? calibrateMode : undefined);
+      const res = await api.predict(
+        selectedFile,
+        finalLabels || undefined,
+        referenceFile || undefined,
+        calibrateMode !== "none" ? calibrateMode : undefined,
+        robustFit,
+        pixelSizeM || undefined
+      );
       
       set({ jobId: res.jobId, jobStatus: "processing" });
       
@@ -312,7 +332,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
 
         if (statusRes.status === "done") {
-          set({ result: statusRes.result });
+          const isNormalized = statusRes.result?.meta?.units === "normalized";
+          set({ 
+            result: statusRes.result,
+            exaggeration: isNormalized ? 50.0 : 1.0 
+          });
         } else if (statusRes.status === "processing" || statusRes.status === "queued") {
           setTimeout(poll, 1000);
         }
@@ -340,7 +364,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       
       let confData: Uint8Array | null = null;
       if (result.meta.files?.confidence) {
-        const url = await api.getFileUrl(result.meta.files.confidence);
+        const url = await api.getFileUrl(result.meta.job_id, result.meta.files.confidence);
         const cRes = await fetch(url);
         if (cRes.ok) {
           const ab = await cRes.arrayBuffer();
@@ -401,3 +425,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   }
 }));
+
+// Initialize API client base URL from saved settings
+api.setBaseUrl(useAppStore.getState().settings.apiBaseUrl);

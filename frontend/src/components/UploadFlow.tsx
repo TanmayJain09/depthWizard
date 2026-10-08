@@ -12,11 +12,16 @@ export function UploadFlow() {
     jobError,
     setFile,
     setReferenceFile,
+    setLabelsFile,
     setCalibrateMode,
     startJob,
     reset,
     useBlankMask,
     setUseBlankMask,
+    pixelSizeM,
+    setPixelSizeM,
+    robustFit,
+    setRobustFit,
   } = useAppStore();
 
   const handleDrop = useCallback(
@@ -120,8 +125,7 @@ export function UploadFlow() {
               type="file" 
               accept=".png,.jpg,.jpeg" 
               onChange={(e) => {
-                const store = useAppStore.getState();
-                if (e.target.files) store.setLabelsFile(e.target.files[0]);
+                if (e.target.files) setLabelsFile(e.target.files[0]);
               }}
               className="file-input"
             />
@@ -148,6 +152,33 @@ export function UploadFlow() {
               />
             </div>
           )}
+
+          <div style={{ marginTop: "var(--sp-4)" }}>
+            {isGeoTiff ? (
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox" 
+                  checked={robustFit} 
+                  onChange={(e) => setRobustFit(e.target.checked)} 
+                />
+                <span className="mono-data" style={{ color: "var(--fg-1)", fontSize: "var(--text-10)" }}>
+                  Robust fit (Huber) for calibration
+                </span>
+              </label>
+            ) : (
+              <div>
+                <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Approximate pixel size (m) (Optional)</div>
+                <input 
+                  type="number" 
+                  value={pixelSizeM} 
+                  onChange={(e) => setPixelSizeM(e.target.value)}
+                  placeholder="e.g. 0.5"
+                  className="text-input"
+                  style={{ width: "100%" }}
+                />
+              </div>
+            )}
+          </div>
 
           <div style={{ marginTop: "var(--sp-8)", textAlign: "right" }}>
             <button className="btn-primary" onClick={startJob}>Process Image</button>

@@ -10,6 +10,7 @@ export type JobCreated = z.infer<typeof JobCreatedSchema>;
 export const JobStatusSchema = z.object({
   job_id: z.string(),
   status: z.enum(["queued", "processing", "done", "failed"]),
+  stage: z.string().nullable().optional(),
   error: z.string().nullable().optional(),
   metadata_url: z.string().nullable().optional(),
 });
@@ -41,7 +42,11 @@ export const MetadataSchema = z.object({
   is_georeferenced: z.boolean(),
   bounds_wgs84: z.array(z.number()).nullable().optional(),
   srtm_error: z.string().nullable().optional(),
-  datum: z.string().nullable().optional(),
+  height_datum: z.string().nullable().optional(),
+  segmentation_source: z.string().nullable().optional(),
+  segmentation_warning: z.string().nullable().optional(),
+  exif_transposed: z.boolean().nullable().optional(),
+  approx_height_range_m: z.array(z.number()).nullable().optional(),
 });
 export type Metadata = z.infer<typeof MetadataSchema>;
 
@@ -55,6 +60,7 @@ export type JobResult = {
     heightmapUrl: string;
     confidenceUrl?: string;
     textureUrl?: string;
+    calibratedGeoreferenceUrl?: string;
     meta: Metadata;
   } | null;
 };
@@ -62,20 +68,4 @@ export type JobResult = {
 export interface PredictResponse {
   jobId: string;
   statusUrl: string;
-}
-
-export interface ApiClient {
-  ping(): Promise<boolean>;
-  setBaseUrl(url: string): void;
-  getFileUrl(relativePath: string): Promise<string>;
-  
-  predict(
-    image: File,
-    labels?: File,
-    reference?: File,
-    calibrate?: "georeferenced" | "relative" | "none",
-    signal?: AbortSignal
-  ): Promise<PredictResponse>;
-  
-  getJobStatus(jobId: string, signal?: AbortSignal): Promise<JobResult>;
 }

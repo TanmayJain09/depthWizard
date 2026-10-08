@@ -110,8 +110,13 @@ export default function ValidationPanel() {
       />
 
       <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Datum / Height Reference</div>
-      <div className="mono-data" style={{ marginBottom: "var(--sp-4)", color: "var(--fg-1)" }}>
-        {result?.meta?.datum || "datum unknown"}
+      <div className="mono-data" style={{ marginBottom: "var(--sp-2)", color: "var(--fg-1)", fontSize: "12px" }}>
+        {result?.meta?.height_datum || "datum unknown"}
+      </div>
+
+      <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Georeferencing (Transform)</div>
+      <div className="mono-data" style={{ marginBottom: "var(--sp-4)", color: "var(--fg-1)", fontSize: "12px" }}>
+        {result?.meta?.transform ? result.meta.transform.map(t => t.toFixed(4)).join(", ") : "N/A"}
       </div>
 
       {result?.meta?.files?.confidence && (

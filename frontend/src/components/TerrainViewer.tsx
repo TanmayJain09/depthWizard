@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+/* eslint-disable react/react-in-jsx-scope */
+/* eslint-disable react-compiler/react-compiler */
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { MapControls, PointerLockControls, Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -143,9 +145,9 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, errorTextureData, refData
       <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]}>
         <bufferGeometry ref={geomRef} />
         {built && showErrorMap && errorTex ? (
-          <meshStandardMaterial map={errorTex} side={THREE.DoubleSide} transparent={true} />
+          <meshStandardMaterial map={errorTex} transparent={true} />
         ) : built && texture && !textureError ? (
-          <meshStandardMaterial map={texture} side={THREE.DoubleSide} wireframe={false} />
+          <meshStandardMaterial map={texture} wireframe={false} />
         ) : (
           <meshStandardMaterial color="#6B747C" wireframe={true} />
         )}
