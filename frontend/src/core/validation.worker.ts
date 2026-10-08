@@ -11,6 +11,8 @@ export interface ValidationWorkerParams {
   predHeight: number;
   predCrs: string | null;
   predTransform: number[] | null; // [x0, dx, xskew, y0, yskew, dy]
+  predBoundsWgs84?: number[] | null;
+  predPixelSize?: number | null;
   predNodata?: number;
   confData: Uint8Array | null;
   nodataOverride?: number;
@@ -83,8 +85,21 @@ self.onmessage = async (e: MessageEvent<ValidationWorkerParams>) => {
     const rasters = await image.readRasters();
     const refData = rasters[0] as Float32Array | Int16Array | Uint16Array | Float64Array;
 
-    if (!p.predTransform) {
-      throw new Error("Predicted DSM lacks georeference transform metadata.");
+    let finalPredTransform = p.predTransform;
+    if (!finalPredTransform && p.predBoundsWgs84 && p.predCrs && p.predPixelSize && p.predBoundsWgs84.length === 4) {
+      if (hasCRS(p.predCrs)) {
+        const [minLon, minLat, maxLon, maxLat] = p.predBoundsWgs84;
+        const transformFunc = proj4("EPSG:4326", p.predCrs);
+        const [minX, minY] = transformFunc.forward([minLon, minLat]);
+        const [maxX, maxY] = transformFunc.forward([maxLon, maxLat]);
+        // Top-left origin: [x0, dx, xskew, y0, yskew, dy]
+        // y0 is maxY, dy is -pixelSize
+        finalPredTransform = [minX, p.predPixelSize, 0, maxY, 0, -p.predPixelSize];
+      }
+    }
+
+    if (!finalPredTransform) {
+      throw new Error("Result metadata has no georeferencing transform; ask the backend to include it");
     }
     if (!refTransform) {
       throw new Error("Reference GeoTIFF lacks georeference transform metadata.");
@@ -140,8 +155,8 @@ self.onmessage = async (e: MessageEvent<ValidationWorkerParams>) => {
         if (!Number.isFinite(predVal) || predVal === p.predNodata) continue;
 
         // Geo-coordinates of predicted pixel center
-        const gx = p.predTransform[0] + (px + 0.5) * p.predTransform[1] + (py + 0.5) * p.predTransform[2];
-        const gy = p.predTransform[3] + (px + 0.5) * p.predTransform[4] + (py + 0.5) * p.predTransform[5];
+        const gx = finalPredTransform[0] + (px + 0.5) * finalPredTransform[1] + (py + 0.5) * finalPredTransform[2];
+        const gy = finalPredTransform[3] + (px + 0.5) * finalPredTransform[4] + (py + 0.5) * finalPredTransform[5];
 
         let rx = gx, ry = gy;
         if (projFunc) {

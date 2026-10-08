@@ -40,8 +40,9 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, errorTextureData, refData
 
   const [errorTex, setErrorTex] = useState<THREE.DataTexture | null>(null);
   useEffect(() => {
+    let dt: THREE.DataTexture | null = null;
     if (errorTextureData) {
-      const dt = new THREE.DataTexture(errorTextureData, meta.width, meta.height, THREE.RGBAFormat);
+      dt = new THREE.DataTexture(errorTextureData, meta.width, meta.height, THREE.RGBAFormat);
       dt.needsUpdate = true;
       dt.magFilter = THREE.LinearFilter;
       dt.minFilter = THREE.LinearFilter;
@@ -50,7 +51,7 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, errorTextureData, refData
       setErrorTex(null);
     }
     return () => {
-      if (errorTex) errorTex.dispose();
+      if (dt) dt.dispose();
     };
   }, [errorTextureData, meta.width, meta.height]);
 
@@ -96,7 +97,7 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, errorTextureData, refData
     } as MeshBuildParams);
 
     return () => worker.terminate();
-  }, [heightmapUrl, meta]);
+  }, [heightmapUrl, meta, onGridParsed]);
 
   // Update exaggeration in place
   useEffect(() => {
@@ -115,14 +116,20 @@ function TerrainMesh({ meta, heightmapUrl, textureUrl, errorTextureData, refData
     
     pos.needsUpdate = true;
     geomRef.current.computeVertexNormals();
-  }, [exaggeration, built, gridData]);
+  }, [exaggeration, built, gridData, refData, showReference]);
+
+  useEffect(() => {
+    const geom = geomRef.current;
+    return () => {
+      if (geom) geom.dispose();
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
-      if (geomRef.current) geomRef.current.dispose();
       if (texture) texture.dispose();
     };
-  }, []);
+  }, [texture]);
 
   return (
     <group>
@@ -192,22 +199,20 @@ export function TerrainViewer() {
   const { validationMetrics, showErrorMap, showReference } = useAppStore();
   const readoutRef = useRef<HTMLDivElement>(null);
   const [measurePoints, setMeasurePoints] = useState<THREE.Vector3[]>([]);
-  const [textureUrl, setTextureUrl] = useState<string | null>(null);
+  const textureUrl = useMemo(() => {
+    return selectedFile ? URL.createObjectURL(selectedFile) : null;
+  }, [selectedFile]);
 
-  // We can track grid in window for the ValidationPanel hack, or we can use a callback.
   const handleGridParsed = (g: TerrainGrid) => {
     setGrid(g);
     (window as any)._currentGridData = g.data;
   };
 
   useEffect(() => {
-    if (selectedFile) {
-      setTextureUrl(URL.createObjectURL(selectedFile));
-    }
     return () => {
       if (textureUrl) URL.revokeObjectURL(textureUrl);
     };
-  }, [selectedFile]);
+  }, [textureUrl]);
 
   const handlePointerMove = (e: any) => {
     if (!readoutRef.current || !grid) return;
@@ -249,12 +254,9 @@ export function TerrainViewer() {
     }
   };
 
-  useEffect(() => {
-    // clear points if tool changes
-    if (activeTool !== "measure") {
-      setMeasurePoints([]);
-    }
-  }, [activeTool]);
+  if (activeTool !== "measure" && measurePoints.length > 0) {
+    setMeasurePoints([]);
+  }
 
   if (!result || !result.meta || !result.heightmapUrl) return null;
 

@@ -6,13 +6,31 @@ export function ExportPanel() {
   const { result } = useAppStore();
   const [exporting, setExporting] = useState(false);
 
-  const downloadFile = async (filename: string, relativePath: string) => {
+  const downloadFile = async (baseFilename: string, relativePath: string) => {
     try {
       setExporting(true);
       const url = await api.getFileUrl(relativePath);
+      
+      let finalFilename = baseFilename;
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        const contentType = res.headers.get('content-type');
+        if (contentType) {
+          if (contentType.includes('image/jpeg')) {
+            finalFilename = finalFilename.replace('.png', '.jpg');
+          } else if (contentType.includes('image/png')) {
+            finalFilename = finalFilename.replace('.jpg', '.png');
+          } else if (contentType.includes('image/tiff')) {
+            finalFilename = finalFilename.replace('.jpg', '.tif').replace('.png', '.tif');
+          }
+        }
+      } catch (e) {
+        // Fallback to baseFilename if HEAD fails
+      }
+
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = finalFilename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

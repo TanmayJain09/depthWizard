@@ -15,6 +15,8 @@ export function UploadFlow() {
     setCalibrateMode,
     startJob,
     reset,
+    useBlankMask,
+    setUseBlankMask,
   } = useAppStore();
 
   const handleDrop = useCallback(
@@ -123,9 +125,16 @@ export function UploadFlow() {
               }}
               className="file-input"
             />
-            <div className="mono-data" style={{ fontSize: "var(--text-10)", color: "var(--fg-2)", marginTop: "var(--sp-1)" }}>
-              If omitted, a blank mask is automatically generated.
-            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "var(--sp-2)", cursor: "pointer" }}>
+              <input 
+                type="checkbox" 
+                checked={useBlankMask} 
+                onChange={(e) => setUseBlankMask(e.target.checked)} 
+              />
+              <span className="mono-data" style={{ color: "var(--fg-1)", fontSize: "var(--text-10)" }}>
+                Use blank mask (heights will be inaccurate)
+              </span>
+            </label>
           </div>
 
           {calibrateMode === "georeferenced" && (

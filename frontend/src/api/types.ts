@@ -41,6 +41,7 @@ export const MetadataSchema = z.object({
   is_georeferenced: z.boolean(),
   bounds_wgs84: z.array(z.number()).nullable().optional(),
   srtm_error: z.string().nullable().optional(),
+  datum: z.string().nullable().optional(),
 });
 export type Metadata = z.infer<typeof MetadataSchema>;
 

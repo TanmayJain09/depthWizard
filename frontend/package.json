@@ -12,7 +12,8 @@
     "electron:start": "electron .",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && npm run electron:start\"",
     "electron:build": "npm run build && electron-builder",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:contract": "vitest run tests/contract.test.ts"
   },
   "build": {
     "appId": "com.depthwizard.app",
@@ -45,6 +46,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.3",
     "@types/proj4": "^2.5.6",
     "@types/react": "^19.2.18",

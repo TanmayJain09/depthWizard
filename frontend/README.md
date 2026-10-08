@@ -8,7 +8,7 @@ A desktop Electron application for 3D terrain visualization, predicting heightma
 - **Offline CRS/Georeferencing**: Bundled with a local coordinate reference system dictionary containing all UTM zones (EPSG:326xx, 327xx) and common CRSes (4326, 3857) allowing completely offline geospatial alignment without external API calls.
 - **Validation**: Upload a reference GeoTIFF, reproject/resample it against the predicted surface, and compare accuracy (RMSE, MAE, pixel counts) dynamically by regions and confidence thresholds.
 - **Tools**: Includes measuring tools, bookmarks, auto-tour camera features, slope overlays, profile charting, and 2D swipe comparison for predictions versus ground truth.
-- **Exporting**: Export screenshots, OBJ mesh data, and original calibrated GeoTIFF prediction results directly from the backend.
+- **Exporting**: Export screenshots, OBJ mesh data, and original prediction results directly from the backend.
 
 ## Development
 

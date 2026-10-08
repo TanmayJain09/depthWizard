@@ -23,11 +23,21 @@ export function InspectorPanel({
   resetView
 }: InspectorPanelProps) {
   
+  const inputDimensions = useAppStore(s => s.inputDimensions);
+  const meta = useAppStore(s => s.result?.meta);
+  const showExifWarning = inputDimensions && meta && (inputDimensions.width !== meta.width || inputDimensions.height !== meta.height);
+
   return (
     <div className="inspector-panel">
       <div className="inspector-header">
         <div className="section-label">Inspector: {activeTool}</div>
       </div>
+
+      {showExifWarning && (
+        <div style={{ padding: "8px", background: "rgba(255,0,0,0.1)", color: "var(--error)", fontSize: "10px", margin: "8px" }} className="mono-data">
+          Warning: Input dimensions changed (Mishandled EXIF rotation). Expected {inputDimensions.width}x{inputDimensions.height}, got {meta.width}x{meta.height}.
+        </div>
+      )}
       
       {activeTool === "navigate" && (
         <div className="inspector-section">

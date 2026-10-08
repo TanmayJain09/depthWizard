@@ -54,10 +54,14 @@ export class RealApiClient implements ApiClient {
       const refBuffer = reference ? await reference.arrayBuffer() : undefined;
       
       const res = await (window as any).electron.api.submitJob(this.baseUrl, {
-        image: { name: image.name, type: image.type, buffer: imgBuffer },
-        labels: labels ? { name: labels.name, type: labels.type, buffer: labelsBuffer } : undefined,
-        reference: reference ? { name: reference.name, type: reference.type, buffer: refBuffer } : undefined,
-        calibrateMode: calibrate
+        files: {
+          image: { name: image.name, type: image.type, buffer: imgBuffer },
+          labels: labels ? { name: labels.name, type: labels.type, buffer: labelsBuffer } : undefined,
+          reference: reference ? { name: reference.name, type: reference.type, buffer: refBuffer } : undefined,
+        },
+        fields: {
+          calibrateMode: calibrate !== "none" ? calibrate : undefined
+        }
       });
       if (!res.ok) throw new Error(res.error);
       return { jobId: res.data.job_id, statusUrl: res.data.status_url };

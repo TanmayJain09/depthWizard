@@ -20,6 +20,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState<"Checking..." | "Connected" | "Error">("Checking...");
 
   useEffect(() => {
+    api.setBaseUrl(useAppStore.getState().settings.apiBaseUrl);
     api.ping().then(() => setConnectionStatus("Connected")).catch(() => setConnectionStatus("Error"));
   }, []);
 

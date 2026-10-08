@@ -49,6 +49,7 @@ app.on('window-all-closed', function () {
 // --- IPC Handlers ---
 
 ipcMain.handle('api-ping', async (event, baseUrl) => {
+  if (!baseUrl || !baseUrl.startsWith('http')) return { ok: false, error: 'Invalid or missing API Base URL' };
   try {
     const res = await fetch(`${baseUrl}/openapi.json`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -58,17 +59,26 @@ ipcMain.handle('api-ping', async (event, baseUrl) => {
   }
 });
 
-ipcMain.handle('api-submit-job', async (event, { baseUrl, files }) => {
+ipcMain.handle('api-submit-job', async (event, { baseUrl, files, fields }) => {
   try {
     const formData = new FormData();
     // Reconstruct File objects from buffer data
-    for (const [key, fileData] of Object.entries(files)) {
-      if (fileData) {
-        const blob = new Blob([fileData.buffer]);
-        formData.append(key, blob, fileData.name);
+    if (files) {
+      for (const [key, fileData] of Object.entries(files)) {
+        if (fileData) {
+          const blob = new Blob([fileData.buffer]);
+          formData.append(key, blob, fileData.name);
+        }
       }
     }
-    const res = await fetch(`${baseUrl}/api/v1/predict`, {
+    if (fields) {
+      for (const [key, val] of Object.entries(fields)) {
+        if (val !== undefined && val !== null) {
+          formData.append(key, val);
+        }
+      }
+    }
+    const res = await fetch(`${baseUrl}/api/v1/process`, {
       method: 'POST',
       body: formData
     });

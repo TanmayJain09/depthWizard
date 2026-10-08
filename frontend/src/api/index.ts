@@ -4,7 +4,7 @@ import { RealApiClient } from "./real";
 
 export * from "./types";
 
-export const isMockMode = import.meta.env.VITE_USE_MOCK !== "false";
+export const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
 
 export const api: ApiClient = isMockMode 
   ? new MockApiClient()

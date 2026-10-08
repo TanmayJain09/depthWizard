@@ -61,6 +61,8 @@ export interface AppState {
   labelsFile: File | null;
   referenceFile: File | null;
   calibrateMode: "none" | "georeferenced" | "relative";
+  useBlankMask: boolean;
+  inputDimensions: { width: number; height: number } | null;
   
   // Job status
   jobId: string | null;
@@ -80,6 +82,7 @@ export interface AppState {
   setLabelsFile: (file: File | null) => void;
   setReferenceFile: (file: File | null) => void;
   setCalibrateMode: (mode: "none" | "georeferenced" | "relative") => void;
+  setUseBlankMask: (use: boolean) => void;
   setActiveTool: (tool: AppState["activeTool"]) => void;
   setExaggeration: (val: number) => void;
   setCameraMode: (mode: AppState["cameraMode"]) => void;
@@ -172,6 +175,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   labelsFile: null,
   referenceFile: null,
   calibrateMode: "none",
+  useBlankMask: false,
+  inputDimensions: null,
   
   jobId: null,
   jobStatus: "idle",
@@ -195,10 +200,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   regionMetrics: [],
   confThreshold: 0.8,
 
-  setFile: (file) => set({ selectedFile: file }),
+  setFile: (file) => {
+    set({ selectedFile: file, inputDimensions: null });
+    if (file && file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        set({ inputDimensions: { width: img.naturalWidth, height: img.naturalHeight } });
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+  },
   setLabelsFile: (file) => set({ labelsFile: file }),
   setReferenceFile: (file) => set({ referenceFile: file }),
   setCalibrateMode: (mode) => set({ calibrateMode: mode }),
+  setUseBlankMask: (use) => set({ useBlankMask: use }),
   setActiveTool: (tool) => set({ activeTool: tool }),
   setExaggeration: (val) => set({ exaggeration: val }),
   setCameraMode: (mode) => set({ cameraMode: mode }),
@@ -266,14 +283,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   startJob: async () => {
-    const { selectedFile, labelsFile, referenceFile, calibrateMode } = get();
+    const { selectedFile, labelsFile, referenceFile, calibrateMode, useBlankMask } = get();
     if (!selectedFile) return;
 
     try {
       set({ jobStatus: "queued", jobProgress: 0, jobStage: "Submitting..." });
       
       let finalLabels = labelsFile;
-      if (!finalLabels) {
+      if (!finalLabels && useBlankMask) {
         set({ jobStage: "Generating default mask..." });
         finalLabels = await createDummyLabelsFile(selectedFile);
       }
@@ -323,7 +340,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       
       let confData: Uint8Array | null = null;
       if (result.meta.files?.confidence) {
-        const cRes = await fetch(result.meta.files.confidence);
+        const url = await api.getFileUrl(result.meta.files.confidence);
+        const cRes = await fetch(url);
         if (cRes.ok) {
           const ab = await cRes.arrayBuffer();
           const { decode } = await import("fast-png");
@@ -367,6 +385,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         predHeight: result.meta.height,
         predCrs: result.meta.crs || null,
         predTransform: result.meta.transform || null,
+        predBoundsWgs84: result.meta.bounds_wgs84 || null,
+        predPixelSize: result.meta.pixel_size_m || null,
         predNodata: undefined,
         confData,
         nodataOverride: validationNodata,

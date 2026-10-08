@@ -109,6 +109,11 @@ export default function ValidationPanel() {
         style={{ width: "100%", marginBottom: "var(--sp-4)" }}
       />
 
+      <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Datum / Height Reference</div>
+      <div className="mono-data" style={{ marginBottom: "var(--sp-4)", color: "var(--fg-1)" }}>
+        {result?.meta?.datum || "datum unknown"}
+      </div>
+
       {result?.meta?.files?.confidence && (
         <>
           <div className="section-label" style={{ marginBottom: "var(--sp-2)", display: "flex", justifyContent: "space-between" }}>
