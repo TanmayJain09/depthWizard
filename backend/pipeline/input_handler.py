@@ -21,7 +21,7 @@ _TIFF_MAGIC = (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")
 def inspect_georef(source) -> dict:
     """Stage 1: detect georeferencing. Only TIFFs can carry it."""
     info = {"is_georeferenced": False, "crs": None,
-            "pixel_size_m": None, "bounds_wgs84": None}
+            "pixel_size_m": None, "bounds_wgs84": None, "transform": None}
     src = _as_path_or_bytes(source)
     if not _is_tiff(src):
         return info
@@ -30,6 +30,7 @@ def inspect_georef(source) -> dict:
             return info
         info["is_georeferenced"] = True
         info["crs"] = ds.crs.to_string()
+        info["transform"] = list(ds.transform)[:6]
         left, bottom, right, top = ds.bounds
         if ds.crs.is_geographic:                 # degrees -> metres
             import math
@@ -73,9 +74,11 @@ def _check_size(h: int, w: int):
         raise ValueError(f"Image too large ({w}x{h}); limit is {MAX_PIXELS} pixels.")
 
 
-def load_image(source) -> Image.Image:
+def load_image(source) -> tuple:
     """RGB image from PNG/JPG/TIFF. 16-bit TIFFs get a 2-98 percentile stretch."""
+    from PIL import ImageOps
     src = _as_path_or_bytes(source)
+    exif_transposed = False
     if _is_tiff(src):
         arr = _read_raster(src).astype(np.float32)          # (B, H, W)
         arr = arr[:3] if arr.shape[0] >= 3 else np.repeat(arr[:1], 3, axis=0)
@@ -86,8 +89,21 @@ def load_image(source) -> Image.Image:
         img = Image.fromarray(arr.astype(np.uint8))
     else:
         img = Image.open(io.BytesIO(src) if isinstance(src, bytes) else src).convert("RGB")
+        original_size = img.size
+        img = ImageOps.exif_transpose(img)
+        if img.size != original_size or img.info.get("exif") != getattr(Image.open(io.BytesIO(src) if isinstance(src, bytes) else src), "info", {}).get("exif"):
+            # Simple check if orientation actually changed
+            pass
+        # Better just use ImageOps.exif_transpose and see if we transposed
+        # Actually, exif_transpose returns a new Image if there's EXIF rotation, otherwise same object or copy without rotation
+        # A simpler way:
+        img_rot = ImageOps.exif_transpose(img)
+        if img_rot != img: # They are different objects if rotation was applied
+            exif_transposed = True
+            img = img_rot
+
     _check_size(img.height, img.width)
-    return img
+    return img, exif_transposed
 
 
 def load_labels(source, dfc: bool = True) -> np.ndarray:

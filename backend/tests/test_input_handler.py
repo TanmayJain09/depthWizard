@@ -16,7 +16,7 @@ def _write_tif(path, arr):
 def test_load_image_from_png_bytes():
     buf = io.BytesIO()
     Image.fromarray(np.zeros((8, 8, 3), np.uint8)).save(buf, format="PNG")
-    assert load_image(buf.getvalue()).size == (8, 8)
+    assert load_image(buf.getvalue())[0].size == (8, 8)
 
 
 def test_load_labels_remaps_dfc(tmp_path):

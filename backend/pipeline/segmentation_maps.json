@@ -1,0 +1,19 @@
+{
+  "LoveDA": {
+    "background": 0,
+    "building": 2,
+    "road": 0,
+    "water": 3,
+    "barren": 0,
+    "forest": 1,
+    "agriculture": 1
+  },
+  "Potsdam": {
+    "impervious": 0,
+    "building": 2,
+    "low vegetation": 1,
+    "tree": 1,
+    "car": 255,
+    "clutter": 255
+  }
+}

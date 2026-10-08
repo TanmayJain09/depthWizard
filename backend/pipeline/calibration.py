@@ -73,8 +73,29 @@ def calibrate_georeferenced(depth, labels, reference, robust=False) -> Calibrati
 
     xd, yd, ld = depth[ok].astype(np.float64), reference[ok].astype(np.float64), labels[ok]
     ga, gb = fit_line(xd, yd, robust)
+    
+    # Clamp calibration sigma so predictions don't explode
+    # If depth is normalized [0, 1], realistic max height is maybe 4000m, so max |ga| ~ 10000. 
+    # Just clamp ga to [-5000, 5000]
+    ga = float(np.clip(ga, -5000.0, 5000.0))
+    
     global_rms = _heldout_rms(xd, yd, robust)
     dsm = (ga * depth + gb).astype(np.float32)       # every pixel gets at least the global fit
+
+    # Interpolate base ground height for hybrid fallback
+    ground_mask = (labels == GROUND) | (labels == WATER)
+    if ground_mask.sum() > 0:
+        from scipy.interpolate import NearestNDInterpolator
+        y_coords, x_coords = np.nonzero(ground_mask)
+        if len(y_coords) > 5000:
+            idx = np.random.choice(len(y_coords), 5000, replace=False)
+            y_coords, x_coords = y_coords[idx], x_coords[idx]
+        ground_heights = dsm[y_coords, x_coords]
+        interp = NearestNDInterpolator(list(zip(y_coords, x_coords)), ground_heights)
+        Y, X = np.mgrid[0:depth.shape[0], 0:depth.shape[1]]
+        interpolated_ground = interp(Y, X).astype(np.float32)
+    else:
+        interpolated_ground = dsm.copy()
 
     params, rstd, counts = {}, {}, {}
     for c in CLASSES:
@@ -82,10 +103,22 @@ def calibrate_georeferenced(depth, labels, reference, robust=False) -> Calibrati
         counts[c] = int(m.sum())
         if counts[c] >= MIN_REF_POINTS and np.ptp(xd[m]) > 1e-6:
             a, b = fit_line(xd[m], yd[m], robust)
+            a = float(np.clip(a, -5000.0, 5000.0))
             rstd[c] = _heldout_rms(xd[m], yd[m], robust)
-        else:                                         # too few points: fall back to global
-            a, b = ga, gb
-            rstd[c] = global_rms
+        else:                                         
+            # Hybrid approach: preserve global shape (ga) but adjust shift (b)
+            # so the class mean matches the interpolated ground + prior
+            a = ga
+            sel = labels == c
+            if sel.sum() > 0:
+                mean_base = interpolated_ground[sel].mean()
+                mean_depth = depth[sel].mean()
+                prior = HEIGHT_PRIORS.get(c, (0.0, 0.0))[0]
+                b = float(mean_base + prior - a * mean_depth)
+            else:
+                b = gb
+            rstd[c] = HEIGHT_PRIORS.get(c, (global_rms, global_rms))[1]
+            
         params[c] = (a, b)
         sel = labels == c
         dsm[sel] = a * depth[sel] + b

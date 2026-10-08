@@ -10,6 +10,7 @@ class JobCreated(BaseModel):
 class JobStatus(BaseModel):
     job_id: str
     status: Literal["queued", "processing", "done", "failed"]
+    stage: Optional[str] = None
     error: Optional[str] = None
     metadata_url: Optional[str] = None
 
@@ -38,3 +39,15 @@ class Metadata(BaseModel):
     crs: Optional[str] = None
     bounds_wgs84: Optional[List[float]] = None
     srtm_error: Optional[str] = None
+    
+    transform: Optional[List[float]] = None
+    height_datum: Optional[str] = None
+    segmentation_source: Optional[str] = None
+    segmentation_warning: Optional[str] = None
+    approx_height_range_m: Optional[List[float]] = None
+    exif_transposed: Optional[bool] = None
+
+    class Config:
+        json_encoders = {
+            float: lambda v: None if v != v or v == float('inf') or v == float('-inf') else v
+        }
