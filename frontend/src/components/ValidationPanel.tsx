@@ -7,6 +7,8 @@ const DensityScatter = React.lazy(() => import('./charts/DensityScatter').then(m
 const SwipeComparison = React.lazy(() => import('./charts/SwipeComparison').then(m => ({ default: m.SwipeComparison })));
 const RegionDrawer = React.lazy(() => import('./charts/RegionDrawer').then(m => ({ default: m.RegionDrawer })));
 
+import { useShallow } from 'zustand/react/shallow';
+
 export default function ValidationPanel() {
   const { 
     validationRefFile, 
@@ -25,7 +27,24 @@ export default function ValidationPanel() {
     setShowReference,
     runValidation, 
     cancelValidation 
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    validationRefFile: state.validationRefFile,
+    validationStatus: state.validationStatus,
+    validationError: state.validationError,
+    validationMetrics: state.validationMetrics,
+    validationNodata: state.validationNodata,
+    showErrorMap: state.showErrorMap,
+    showReference: state.showReference,
+    result: state.result,
+    confThreshold: state.confThreshold,
+    setValidationRefFile: state.setValidationRefFile,
+    setValidationNodata: state.setValidationNodata,
+    setConfThreshold: state.setConfThreshold,
+    setShowErrorMap: state.setShowErrorMap,
+    setShowReference: state.setShowReference,
+    runValidation: state.runValidation,
+    cancelValidation: state.cancelValidation
+  })));
 
   // We need predData to run validation, but wait, `runValidation` takes predData.
   // The predData is in the Web Worker for the terrain right now, but wait...

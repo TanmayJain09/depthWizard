@@ -12,7 +12,7 @@ describe("Backend API Contract Tests", () => {
     try {
       const res = await fetch(`${baseUrl}/openapi.json`);
       if (!res.ok) throw new Error();
-    } catch (e) {
+    } catch (_e) {
       console.warn(`Backend not reachable at ${baseUrl}. Contract tests will fail or be skipped.`);
       backendOffline = true;
     }

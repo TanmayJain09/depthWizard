@@ -5,8 +5,11 @@ import { TerrainViewer } from './components/TerrainViewer';
 import { ToolRail } from './components/ToolRail';
 import { InspectorPanel } from './components/InspectorPanel';
 import { SettingsDialog } from './components/SettingsDialog';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppStore } from './store';
 import { isMockMode, api } from './api';
+
+import { useShallow } from 'zustand/react/shallow';
 
 function App() {
   const { 
@@ -14,14 +17,52 @@ function App() {
     activeTool, setActiveTool,
     exaggeration, setExaggeration,
     cameraMode, setCameraMode
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    result: state.result,
+    activeTool: state.activeTool,
+    setActiveTool: state.setActiveTool,
+    exaggeration: state.exaggeration,
+    setExaggeration: state.setExaggeration,
+    cameraMode: state.cameraMode,
+    setCameraMode: state.setCameraMode
+  })));
 
   const [showSettings, setShowSettings] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<"Checking..." | "Connected" | "Error">("Checking...");
+  const [connectionStatus, setConnectionStatus] = useState<"Checking..." | "Connected" | "Unreachable">("Checking...");
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.setBaseUrl(useAppStore.getState().settings.apiBaseUrl);
-    api.ping().then(() => setConnectionStatus("Connected")).catch(() => setConnectionStatus("Error"));
+    let timeoutId: number;
+    
+    const checkHealth = async () => {
+      api.setBaseUrl(useAppStore.getState().settings.apiBaseUrl);
+      const res = await api.getHealth();
+      if (res.status === "ok") {
+        setConnectionStatus("Connected");
+        setLatencyMs(res.latency);
+        setConnectionError(null);
+      } else {
+        setConnectionStatus("Unreachable");
+        setLatencyMs(res.latency);
+        setConnectionError(res.error || "Unknown error");
+      }
+      timeoutId = window.setTimeout(checkHealth, 30000);
+    };
+
+    checkHealth();
+    
+    const onSettingsSave = () => {
+      clearTimeout(timeoutId);
+      setConnectionStatus("Checking...");
+      checkHealth();
+    };
+    window.addEventListener("settings-saved", onSettingsSave);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("settings-saved", onSettingsSave);
+    };
   }, []);
 
   return (
@@ -35,7 +76,9 @@ function App() {
           <UploadFlow />
         ) : (
           <div className="viewer-container">
-            <TerrainViewer />
+            <ErrorBoundary>
+              <TerrainViewer />
+            </ErrorBoundary>
           </div>
         )}
       </div>
@@ -62,10 +105,12 @@ function App() {
           <button className="btn-secondary" style={{ padding: '0 4px', fontSize: '10px' }} onClick={() => setShowSettings(true)}>Settings</button>
         </div>
         <div className="status-group">
-          <span>{connectionStatus}</span>
+          <span title={connectionError || ""} style={{ cursor: connectionError ? "help" : "default" }}>
+            {connectionStatus} {latencyMs !== null && connectionStatus === "Connected" && `(${latencyMs}ms)`}
+          </span>
           <span style={{ 
             display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', 
-            backgroundColor: connectionStatus === "Connected" ? 'var(--success)' : connectionStatus === "Error" ? 'var(--error)' : 'var(--fg-2)'
+            backgroundColor: connectionStatus === "Connected" ? 'var(--success)' : connectionStatus === "Unreachable" ? 'var(--error)' : 'var(--fg-2)'
           }}></span>
           <span>60 FPS</span>
         </div>

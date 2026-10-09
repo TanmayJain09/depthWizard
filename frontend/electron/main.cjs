@@ -1,6 +1,6 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
 const path = require('path');
-const fs = require('fs');
+
 
 // Settings are stored in localStorage in renderer, but we need the API base URL in main for proxying.
 // We will pass the API URL with each IPC call.

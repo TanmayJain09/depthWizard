@@ -2,6 +2,8 @@ import React, { useCallback } from "react";
 import { useAppStore } from "../store";
 import { Upload, FileWarning } from "lucide-react";
 
+import { useShallow } from 'zustand/react/shallow';
+
 export function UploadFlow() {
   const {
     selectedFile,
@@ -22,7 +24,45 @@ export function UploadFlow() {
     setPixelSizeM,
     robustFit,
     setRobustFit,
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    selectedFile: state.selectedFile,
+    calibrateMode: state.calibrateMode,
+    jobStatus: state.jobStatus,
+    jobProgress: state.jobProgress,
+    jobStage: state.jobStage,
+    jobError: state.jobError,
+    setFile: state.setFile,
+    setReferenceFile: state.setReferenceFile,
+    setLabelsFile: state.setLabelsFile,
+    setCalibrateMode: state.setCalibrateMode,
+    startJob: state.startJob,
+    reset: state.reset,
+    useBlankMask: state.useBlankMask,
+    setUseBlankMask: state.setUseBlankMask,
+    pixelSizeM: state.pixelSizeM,
+    setPixelSizeM: state.setPixelSizeM,
+    robustFit: state.robustFit,
+    setRobustFit: state.setRobustFit
+  })));
+
+  React.useEffect(() => {
+    // Check if the backend requires labels, and if so, default to the blank mask
+    import("../api").then(({ api, isMockMode }) => {
+      if (isMockMode) return;
+      api.getOpenApi().then(doc => {
+        const processEndpoint = doc?.paths?.["/api/v1/process"]?.post;
+        if (!processEndpoint) return;
+        
+        // Find if labels is in the required list of the requestBody
+        const reqBody = processEndpoint.requestBody?.content?.["multipart/form-data"]?.schema;
+        if (reqBody && reqBody.required && reqBody.required.includes("labels")) {
+          setUseBlankMask(true);
+        } else {
+          setUseBlankMask(false);
+        }
+      }).catch(err => console.warn("Could not fetch OpenAPI spec to determine defaults:", err));
+    });
+  }, [setUseBlankMask]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {

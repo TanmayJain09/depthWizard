@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { useAppStore } from '../store';
 import { api } from '../api';
 
+import { useShallow } from 'zustand/react/shallow';
+
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
-  const { settings, setSettings } = useAppStore();
+  const { settings, setSettings } = useAppStore(useShallow(state => ({
+    settings: state.settings,
+    setSettings: state.setSettings
+  })));
   const [url, setUrl] = useState(settings.apiBaseUrl);
   const [nodata, setNodata] = useState(settings.defaultNodata?.toString() || "");
   const [conf, setConf] = useState(settings.defaultConfThreshold);

@@ -11,11 +11,30 @@ export function setBaseUrl(url: string): void {
   baseUrl = url;
 }
 
+export async function getOpenApi(): Promise<any> {
+  const res = await fetch(`${baseUrl}/openapi.json`, { method: "GET" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
 export async function ping(): Promise<boolean> {
   if (isMockMode) return mockApi.ping();
   const res = await fetch(`${baseUrl}/openapi.json`, { method: "GET" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return true;
+}
+
+export async function getHealth(): Promise<{ status: string, latency: number, error?: string }> {
+  if (isMockMode) return { status: "ok", latency: 5 };
+  const start = performance.now();
+  try {
+    const res = await fetch(`${baseUrl}/health`, { method: "GET" });
+    const latency = Math.round(performance.now() - start);
+    if (!res.ok) return { status: "error", latency, error: `HTTP ${res.status}` };
+    return { status: "ok", latency };
+  } catch (err: any) {
+    return { status: "error", latency: Math.round(performance.now() - start), error: err.message };
+  }
 }
 
 export function getFileUrl(jid: string, filename: string): string {
@@ -49,7 +68,15 @@ export async function predict(
 
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Process failed: ${res.statusText} - ${txt}`);
+    let detail = txt;
+    try {
+      const parsed = JSON.parse(txt);
+      if (parsed.detail) {
+        if (typeof parsed.detail === "string") detail = parsed.detail;
+        else if (Array.isArray(parsed.detail)) detail = parsed.detail.map((d: any) => d.msg).join(", ");
+      }
+    } catch (e) {}
+    throw new Error(`Process failed (${res.status}): ${detail}`);
   }
   const data = await res.json();
   return { jobId: data.job_id, statusUrl: data.status_url };
@@ -110,7 +137,9 @@ export async function getJobStatus(jobId: string, signal?: AbortSignal): Promise
 
 export const api = {
   setBaseUrl,
+  getOpenApi,
   ping,
+  getHealth,
   getFileUrl,
   predict,
   getJobStatus,

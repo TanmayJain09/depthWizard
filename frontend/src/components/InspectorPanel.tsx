@@ -14,6 +14,8 @@ interface InspectorPanelProps {
   resetView: () => void;
 }
 
+import { useShallow } from 'zustand/react/shallow';
+
 export function InspectorPanel({
   activeTool,
   exaggeration,
@@ -23,12 +25,15 @@ export function InspectorPanel({
   resetView
 }: InspectorPanelProps) {
   
-  const inputDimensions = useAppStore(s => s.inputDimensions);
-  const meta = useAppStore(s => s.result?.meta);
+  const { inputDimensions, meta, bookmarks, isTouring, tourSpeed, useBlankMask } = useAppStore(useShallow(state => ({
+    inputDimensions: state.inputDimensions,
+    meta: state.result?.meta,
+    bookmarks: state.bookmarks,
+    isTouring: state.isTouring,
+    tourSpeed: state.tourSpeed,
+    useBlankMask: state.useBlankMask
+  })));
   const showExifWarning = inputDimensions && meta && (inputDimensions.width !== meta.width || inputDimensions.height !== meta.height);
-  const bookmarks = useAppStore(s => s.bookmarks);
-  const isTouring = useAppStore(s => s.isTouring);
-  const tourSpeed = useAppStore(s => s.tourSpeed);
 
   return (
     <div className="inspector-panel">
@@ -42,8 +47,48 @@ export function InspectorPanel({
         </div>
       )}
       
+      {meta && (
+        <div className="inspector-section" style={{ background: "var(--bg-1)", margin: "8px", padding: "8px", borderRadius: "4px" }}>
+          <div className="section-label" style={{ marginBottom: "8px", color: "var(--fg-1)" }}>Result Info</div>
+          <div className="mono-data" style={{ fontSize: "11px", color: "var(--fg-2)", display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div><strong>Mode:</strong> {meta.mode}</div>
+            <div><strong>Units:</strong> {meta.units === 'normalized' ? 'relative units' : meta.units}</div>
+            <div><strong>Size:</strong> {meta.width}x{meta.height}</div>
+            {meta.pixel_size_m && <div><strong>Pixel Size:</strong> {meta.pixel_size_m.toFixed(4)}m</div>}
+            <div><strong>Height Range:</strong> {meta.height_min.toFixed(2)} to {meta.height_max.toFixed(2)} {meta.units === 'normalized' ? '(relative)' : ''}</div>
+            {meta.units === 'normalized' && <div><strong>Relief scale:</strong> 12% of max dimension</div>}
+            {meta.mean_confidence !== undefined && <div><strong>Mean Confidence:</strong> {(meta.mean_confidence * 100).toFixed(1)}%</div>}
+            {meta.segmentation_source && <div><strong>Seg Source:</strong> {meta.segmentation_source}</div>}
+            {meta.height_datum && <div><strong>Datum:</strong> {meta.height_datum}</div>}
+            
+            {meta.files && <div><strong>Files Loaded:</strong> {Object.keys(meta.files).length}</div>}
+          </div>
+          
+          {(meta.segmentation_warning || useBlankMask) && (
+            <div style={{ marginTop: "8px", padding: "8px", background: "rgba(255,165,0,0.1)", color: "#c98200", fontSize: "11px", borderRadius: "4px" }} className="mono-data">
+              <strong>Warning:</strong> No segmentation: every pixel treated as ground; buildings and trees will be flat. {meta.segmentation_warning || ''}
+            </div>
+          )}
+        </div>
+      )}
+      
       {activeTool === "navigate" && (
         <div className="inspector-section">
+          <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Render Mode</div>
+          <div style={{ marginBottom: "var(--sp-4)" }}>
+            <select 
+              value={useAppStore.getState().renderMode} 
+              onChange={e => useAppStore.getState().setRenderMode(e.target.value as any)}
+              style={{ width: "100%", padding: "4px", background: "var(--bg-1)", color: "var(--fg-1)", border: "1px solid var(--border-color)", borderRadius: "4px" }}
+            >
+              <option value="textured">Textured (Lit)</option>
+              <option value="texture-only">Texture Only (Unlit)</option>
+              <option value="normals">Normals</option>
+              <option value="ramp">Height Ramp</option>
+              <option value="wireframe">Wireframe</option>
+            </select>
+          </div>
+
           <div className="section-label" style={{ marginBottom: "var(--sp-2)" }}>Camera Mode</div>
           <div style={{ display: "flex", gap: "var(--sp-2)", marginBottom: "var(--sp-4)" }}>
             <button 

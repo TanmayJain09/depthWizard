@@ -21,6 +21,13 @@ vi.mock("../src/store", () => {
   };
 });
 
+vi.mock("../src/api", () => ({
+  api: {
+    getOpenApi: vi.fn(async () => ({ paths: {} }))
+  },
+  isMockMode: true
+}));
+
 describe("UploadFlow component", () => {
   beforeEach(() => {
     useAppStore.setState({

@@ -74,10 +74,11 @@ export interface AppState {
   jobError: string | null;
   result: JobResult["result"] | null;
   
-  // Viewer state
   activeTool: "navigate" | "measure" | "slope" | "profile" | "validate" | "export";
   exaggeration: number;
   cameraMode: "orbit" | "fly";
+  orbitCameraState: { position: [number, number, number], target: [number, number, number] } | null;
+  renderMode: "textured" | "texture-only" | "normals" | "ramp" | "wireframe";
 
   // Actions
   setFile: (file: File) => void;
@@ -89,7 +90,8 @@ export interface AppState {
   setRobustFit: (val: boolean) => void;
   setActiveTool: (tool: AppState["activeTool"]) => void;
   setExaggeration: (val: number) => void;
-  setCameraMode: (mode: AppState["cameraMode"]) => void;
+  setCameraMode: (mode: AppState["cameraMode"], currentOrbitState?: AppState["orbitCameraState"]) => void;
+  setRenderMode: (mode: AppState["renderMode"]) => void;
   startJob: () => Promise<void>;
   // Validation
   validationRefFile: File | null;
@@ -197,6 +199,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeTool: "navigate",
   exaggeration: 1.0,
   cameraMode: "orbit",
+  orbitCameraState: null,
+  renderMode: "textured",
 
   validationRefFile: null,
   validationStatus: "idle",
@@ -229,7 +233,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRobustFit: (val) => set({ robustFit: val }),
   setActiveTool: (tool) => set({ activeTool: tool }),
   setExaggeration: (val) => set({ exaggeration: val }),
-  setCameraMode: (mode) => set({ cameraMode: mode }),
+  setCameraMode: (mode, currentOrbitState) => set((state) => {
+    if (state.cameraMode === mode && currentOrbitState === undefined) return {};
+    if (state.cameraMode === mode && currentOrbitState && state.orbitCameraState) {
+      const samePos = currentOrbitState.position.every((p, i) => p === state.orbitCameraState!.position[i]);
+      const sameTarget = currentOrbitState.target.every((t, i) => t === state.orbitCameraState!.target[i]);
+      if (samePos && sameTarget) return {};
+    }
+    return {
+      cameraMode: mode, 
+      orbitCameraState: currentOrbitState !== undefined ? currentOrbitState : state.orbitCameraState 
+    };
+  }),
+  setRenderMode: (mode) => set({ renderMode: mode }),
   setValidationRefFile: (file) => set({ validationRefFile: file, validationMetrics: null, validationError: null, validationStatus: "idle", regionMetrics: [] }),
   setValidationNodata: (val) => set({ validationNodata: val }),
   setConfThreshold: (val) => set({ confThreshold: val }),
@@ -332,10 +348,26 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
 
         if (statusRes.status === "done") {
-          const isNormalized = statusRes.result?.meta?.units === "normalized";
+          // Preload assets into cache so they are requested exactly once per job
+          if (statusRes.result && statusRes.result.meta) {
+             const { loadJobAssets } = await import("./core/asset_loader");
+             set({ jobStage: "Decoding assets..." });
+             try {
+                await loadJobAssets(
+                   statusRes.result.meta.job_id,
+                   statusRes.result.heightmapUrl,
+                   statusRes.result.textureUrl || null,
+                   statusRes.result.meta
+                );
+             } catch(e) {
+                console.error("Failed to preload assets", e);
+             }
+          }
+
           set({ 
             result: statusRes.result,
-            exaggeration: isNormalized ? 50.0 : 1.0 
+            exaggeration: 1.0,
+            jobStage: "Done"
           });
         } else if (statusRes.status === "processing" || statusRes.status === "queued") {
           setTimeout(poll, 1000);
@@ -428,3 +460,4 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 // Initialize API client base URL from saved settings
 api.setBaseUrl(useAppStore.getState().settings.apiBaseUrl);
+

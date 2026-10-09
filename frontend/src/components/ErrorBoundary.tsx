@@ -1,6 +1,6 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
-import { FileWarning } from "lucide-react";
+import { useAppStore } from "../store";
 
 interface Props {
   children?: ReactNode;
@@ -9,38 +9,46 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  componentStack: string | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
+    componentStack: null
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, componentStack: null };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    this.setState({ componentStack: errorInfo.componentStack || null });
   }
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="centered" style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-0)" }}>
-          <div className="error-box" style={{ maxWidth: "500px", padding: "var(--sp-8)" }}>
-            <FileWarning size={32} style={{ color: "var(--error)", marginBottom: "var(--sp-4)" }} />
-            <div className="mono-data" style={{ color: "var(--error)", marginBottom: "var(--sp-2)", fontSize: "var(--text-14)" }}>
-              Something went wrong.
-            </div>
-            <div className="mono-data" style={{ color: "var(--fg-2)", marginBottom: "var(--sp-6)", fontSize: "var(--text-12)", wordBreak: "break-word" }}>
-              {this.state.error?.message}
-            </div>
-            <button className="btn-secondary" onClick={() => window.location.reload()}>
-              Reload
-            </button>
-          </div>
+        <div style={{ padding: "20px", color: "white", background: "#333", height: "100%", width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+          <h2>Something went wrong in the viewer.</h2>
+          <pre style={{ color: "red", background: "#111", padding: "10px", borderRadius: "5px", overflowX: "auto", maxWidth: "80%", textAlign: "left" }}>
+            {this.state.error?.toString()}
+            <br />
+            {this.state.componentStack}
+          </pre>
+          <button 
+            className="btn-primary" 
+            style={{ marginTop: "20px" }}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('reset-camera'));
+              useAppStore.getState().setCameraMode('orbit');
+              this.setState({ hasError: false, error: null, componentStack: null });
+            }}
+          >
+            Reset view
+          </button>
         </div>
       );
     }
