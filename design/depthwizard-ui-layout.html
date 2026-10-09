@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DepthWizard UI Layout</title>
+    <style>
+        /* =======================================================================
+           DESIGN TOKENS
+           These variables define the entire design system and should be extracted
+           for the real application.
+           ======================================================================= */
+        :root {
+            /* Palette: Dark Ink (Deep, technical grays) */
+            --bg-0: #0D1013; /* App shell background (viewport) */
+            --bg-1: #12161A; /* Panels, top bar, sidebars */
+            --bg-2: #181D22; /* Hover states, nested containers */
+            --bg-3: #222930; /* Elevated elements, selected items */
+            
+            /* Borders */
+            --border-1: #262D34; /* Structural borders, dividers */
+            --border-2: #343E48; /* Prominent borders, inputs */
+            
+            /* Text (High contrast to low contrast) */
+            --text-1: #E6E2D9; /* Primary text, headings */
+            --text-2: #9AA3AB; /* Secondary text, labels */
+            --text-3: #6B747C; /* Tertiary text, disabled states, gridlines */
+            
+            /* Accent: Survey Orange */
+            --accent-primary: #FF6A2B;
+            --accent-hover: #E55820;
+            --accent-muted: rgba(255, 106, 43, 0.15);
+            
+            /* Semantics */
+            --status-info: #2196F3;
+            --status-success: #4CAF50;
+            --status-warning: #FFC107;
+            --status-error: #F44336;
+            --status-warning-bg: rgba(255, 193, 7, 0.1);
+            --status-error-bg: rgba(244, 67, 54, 0.1);
+
+            /* Typography */
+            --font-sans: "IBM Plex Sans", "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+            --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+            
+            --text-sm: 11px;
+            --text-base: 13px;
+            --text-lg: 15px;
+            
+            /* Layout & Spacing (4px grid) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            
+            /* Radii & Borders */
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --border-width: 1px;
+            
+            /* Shadows & Motion */
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+            --transition-fast: 0.15s ease;
+        }
+
+        /* =======================================================================
+           GLOBAL RESET & TYPOGRAPHY
+           ======================================================================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-sans);
+            font-size: var(--text-base);
+            color: var(--text-1);
+            background-color: var(--bg-0);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Type scale */
+        .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+        .text-sm { font-size: var(--text-sm); }
+        .text-lg { font-size: var(--text-lg); }
+        .text-muted { color: var(--text-2); }
+        .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-2);
+            font-weight: 600;
+        }
+        
+        /* =======================================================================
+           COMPONENTS
+           ======================================================================= */
+        /* Buttons */
+        button {
+            font-family: inherit;
+            font-size: var(--text-base);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            height: 28px;
+            transition: all var(--transition-fast);
+            border: var(--border-width) solid transparent;
+            background: transparent;
+            color: var(--text-1);
+        }
+        button:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-primary { background: var(--accent-primary); color: #000; font-weight: 500; }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+        
+        .btn-secondary { border-color: var(--border-2); background: var(--bg-1); }
+        .btn-secondary:hover:not(:disabled) { background: var(--bg-2); border-color: var(--text-3); }
+        
+        .btn-tertiary:hover:not(:disabled) { background: var(--bg-2); }
+        
+        .btn-icon { width: 28px; padding: 0; }
+
+        /* Inputs & Controls */
+        input[type="text"], input[type="number"], select {
+            background: var(--bg-0);
+            border: var(--border-width) solid var(--border-1);
+            color: var(--text-1);
+            font-family: var(--font-mono);
+            font-size: var(--text-base);
+            padding: 0 var(--space-2);
+            height: 28px;
+            border-radius: var(--radius-sm);
+            width: 100%;
+        }
+        input:focus-visible, select:focus-visible {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        /* Checkbox */
+        .checkbox-wrapper { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+        .checkbox-custom {
+            width: 14px; height: 14px;
+            border: var(--border-width) solid var(--border-2);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-0);
+        }
+        .checkbox-wrapper:hover .checkbox-custom { border-color: var(--text-3); }
+        input[type="checkbox"]:checked + .checkbox-custom {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+        input[type="checkbox"]:checked + .checkbox-custom::after {
+            content: "";
+            width: 4px; height: 8px;
+            border: solid #000;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg) translateY(-1px);
+        }
+        input[type="checkbox"] { display: none; }
+
+        /* Segmented Control */
+        .segmented-control {
+            display: flex;
+            background: var(--bg-0);
+            border: var(--border-width) solid var(--border-1);
+            border-radius: var(--radius-md);
+            padding: 2px;
+        }
+        .segment {
+            flex: 1;
+            text-align: center;
+            padding: var(--space-1) var(--space-2);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            color: var(--text-2);
+        }
+        .segment.active { background: var(--bg-2); color: var(--text-1); box-shadow: var(--shadow-sm); }
+        
+        /* Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border-1);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px; width: 12px;
+            border-radius: 50%;
+            background: var(--text-1);
+            cursor: pointer;
+            margin-top: -4px;
+        }
+        input[type="range"]:focus-visible::-webkit-slider-thumb {
+            box-shadow: 0 0 0 3px var(--accent-muted);
+        }
+
+        /* SVG Icons */
+        svg.icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: var(--text-sm); }
+        th, td { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: var(--border-width) solid var(--border-1); }
+        th:first-child, td:first-child { text-align: left; }
+        th { color: var(--text-2); font-weight: normal; border-bottom-color: var(--border-2); }
+        tr:hover { background: var(--bg-2); }
+
+        /* Status badges */
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-size: var(--text-sm);
+            font-family: var(--font-mono);
+            background: var(--bg-3);
+        }
+        .badge.warning { background: var(--status-warning-bg); color: var(--status-warning); border: 1px solid var(--status-warning); }
+        
+        /* Layout Utilities */
+        .flex { display: flex; }
+        .flex-col { display: flex; flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-1 { gap: var(--space-1); }
+        .gap-2 { gap: var(--space-2); }
+        .gap-3 { gap: var(--space-3); }
+        .gap-4 { gap: var(--space-4); }
+        .p-2 { padding: var(--space-2); }
+        .p-3 { padding: var(--space-3); }
+        .p-4 { padding: var(--space-4); }
+        .border-b { border-bottom: var(--border-width) solid var(--border-1); }
+        .border-r { border-right: var(--border-width) solid var(--border-1); }
+        .border-t { border-top: var(--border-width) solid var(--border-1); }
+        .border-l { border-left: var(--border-width) solid var(--border-1); }
+
+        /* =======================================================================
+           APP SHELL (Screen 1)
+           ======================================================================= */
+        .app-shell {
+            display: grid;
+            grid-template-columns: 48px 1fr 320px;
+            grid-template-rows: 40px 1fr 32px;
+            grid-template-areas:
+                "top top top"
+                "rail viewport inspector"
+                "status status status";
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            background: var(--bg-1);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            grid-area: top;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-4);
+            border-bottom: var(--border-width) solid var(--border-1);
+            background: var(--bg-1);
+        }
+        .top-bar .logo { font-weight: 600; letter-spacing: 0.5px; display: flex; align-items: center; gap: var(--space-2); }
+        .top-bar .logo svg { color: var(--accent-primary); }
+        
+        /* Tool Rail */
+        .tool-rail {
+            grid-area: rail;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-3) 0;
+            border-right: var(--border-width) solid var(--border-1);
+            background: var(--bg-1);
+        }
+        .tool-btn {
+            width: 32px; height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-2);
+            cursor: pointer;
+            position: relative;
+        }
+        .tool-btn:hover { color: var(--text-1); background: var(--bg-2); }
+        .tool-btn.active { color: var(--accent-primary); background: var(--accent-muted); }
+        
+        /* Tooltip simulation */
+        .tool-btn:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 40px;
+            background: var(--bg-3);
+            color: var(--text-1);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-size: var(--text-sm);
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Viewport */
+        .viewport {
+            grid-area: viewport;
+            background: var(--bg-0);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* SVG Graticule Background */
+        .viewport-bg {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+        }
+        
+        /* Viewport Overlays */
+        .vp-overlay { position: absolute; padding: var(--space-2); }
+        .vp-top-left { top: 0; left: 0; }
+        .vp-top-right { top: 0; right: 0; }
+        .vp-bottom-left { bottom: 0; left: 0; }
+        .vp-bottom-right { bottom: 0; right: 0; }
+        
+        .compass {
+            width: 32px; height: 32px;
+            background: rgba(18,22,26,0.8);
+            border: 1px solid var(--border-1);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .scale-bar {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .scale-line {
+            width: 100px; height: 4px;
+            border: 1px solid var(--text-1);
+            border-top: none;
+        }
+
+        .minimap {
+            width: 120px; height: 90px;
+            background: var(--bg-1);
+            border: 1px solid var(--border-1);
+            position: relative;
+        }
+        .minimap-view {
+            position: absolute; top: 20%; left: 30%; width: 40%; height: 30%;
+            border: 1px solid var(--accent-primary);
+            background: rgba(255,106,43,0.1);
+        }
+
+        .vp-label {
+            background: rgba(18,22,26,0.8);
+            border: 1px solid var(--border-1);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Inspector Panel */
+        .inspector {
+            grid-area: inspector;
+            background: var(--bg-1);
+            border-left: var(--border-width) solid var(--border-1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .panel-section {
+            border-bottom: var(--border-width) solid var(--border-1);
+            padding: var(--space-4);
+        }
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: var(--space-3);
+        }
+        
+        /* Data grid for key/value */
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: var(--space-1);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+        }
+        .data-grid span:first-child { color: var(--text-2); }
+        
+        /* Warning Banner */
+        .warning-banner {
+            background: var(--status-warning-bg);
+            border-left: 3px solid var(--status-warning);
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm);
+            color: var(--text-1);
+            margin-bottom: var(--space-3);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            grid-area: status;
+            background: var(--bg-1);
+            border-top: var(--border-width) solid var(--border-1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-3);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            color: var(--text-2);
+        }
+        .status-item { display: flex; align-items: center; gap: var(--space-1); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--status-success); }
+        
+        /* =======================================================================
+           SCREENS & STATES (Section 2)
+           ======================================================================= */
+        .presentation-container {
+            padding: 64px;
+            background: #000;
+            min-height: 100vh;
+        }
+        .presentation-header {
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-1);
+            padding-bottom: 20px;
+        }
+        .presentation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 40px;
+        }
+        
+        .mock-window {
+            background: var(--bg-1);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+        .mock-header {
+            background: var(--bg-2);
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-1);
+            font-size: var(--text-sm);
+            color: var(--text-2);
+        }
+        .mock-content {
+            flex: 1;
+            position: relative;
+            display: flex;
+        }
+
+        /* Empty State */
+        .dropzone {
+            flex: 1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px dashed var(--border-2);
+            margin: var(--space-4);
+            border-radius: var(--radius-md);
+            background: var(--bg-0);
+        }
+
+        /* Settings Dialog */
+        .dialog-backdrop {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .dialog {
+            background: var(--bg-1);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius-md);
+            width: 400px;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Charts */
+        .chart-container {
+            border: 1px solid var(--border-1);
+            background: var(--bg-0);
+            border-radius: var(--radius-sm);
+            padding: var(--space-2);
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- =======================================================================
+     APP SHELL
+     ======================================================================= -->
+<div class="app-shell">
+    
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="flex items-center gap-4">
+            <div class="logo">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M2 12l10-8 10 8-10 8z M12 12l10-8 M2 12l10 8"/></svg>
+                DepthWizard
+            </div>
+            <div class="border-l" style="height: 20px;"></div>
+            <div class="mono text-muted text-sm">site_survey_2026.tif</div>
+            <div class="badge">RELATIVE rDSM</div>
+        </div>
+        <div class="flex gap-2">
+            <button class="btn-secondary btn-icon" title="Settings"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+            <button class="btn-primary">Export 3D</button>
+        </div>
+    </div>
+
+    <!-- TOOL RAIL -->
+    <div class="tool-rail">
+        <div class="tool-btn active" data-tooltip="Navigate"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg></div>
+        <div class="tool-btn" data-tooltip="Measure"><svg class="icon" viewBox="0 0 24 24"><path d="M21 3L3 21 M21 3v6 M21 3h-6"/></svg></div>
+        <div class="tool-btn" data-tooltip="Profile"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18 M3 15l5-5 5 5 8-8"/></svg></div>
+        <div class="tool-btn" data-tooltip="Slope"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18 M3 21l18-12"/></svg></div>
+        <div class="border-t" style="width: 24px; margin: 8px 0;"></div>
+        <div class="tool-btn" data-tooltip="Validate"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4 M2 12l5 5 M22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6"/></svg></div>
+    </div>
+
+    <!-- VIEWPORT -->
+    <div class="viewport">
+        <svg class="viewport-bg" preserveAspectRatio="none">
+            <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--border-1)" stroke-width="0.5"/>
+                </pattern>
+                <linearGradient id="hypsometric" x1="0%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" stop-color="#113322"/>
+                    <stop offset="30%" stop-color="#335522"/>
+                    <stop offset="60%" stop-color="#888833"/>
+                    <stop offset="85%" stop-color="#aa5522"/>
+                    <stop offset="100%" stop-color="#dddddd"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            
+            <!-- Contour Lines -->
+            <path d="M 100 200 C 300 150, 500 300, 800 200" fill="none" stroke="var(--border-2)" stroke-width="1" opacity="0.5"/>
+            <path d="M 150 250 C 350 200, 450 350, 750 250" fill="none" stroke="var(--border-2)" stroke-width="1" opacity="0.5"/>
+            <path d="M 200 300 C 400 250, 400 400, 700 300" fill="none" stroke="var(--border-2)" stroke-width="1" opacity="0.5"/>
+            
+            <!-- Isometric Terrain Slab -->
+            <g transform="translate(400, 300) scale(1, 0.5) rotate(45)">
+                <polygon points="0,0 300,0 300,300 0,300" fill="url(#hypsometric)" stroke="var(--text-3)" stroke-width="1"/>
+                <!-- 3D Edge -->
+                <polygon points="0,300 300,300 300,350 0,350" fill="#0A0C0E" stroke="var(--text-3)" stroke-width="1"/>
+                <polygon points="300,0 350,0 350,300 300,300" fill="#050607" stroke="var(--text-3)" stroke-width="1"/>
+            </g>
+
+            <!-- Measurement Line -->
+            <line x1="450" y1="280" x2="650" y2="210" stroke="var(--accent-primary)" stroke-width="1.5"/>
+            <circle cx="450" cy="280" r="3" fill="var(--bg-0)" stroke="var(--accent-primary)" stroke-width="1.5"/>
+            <circle cx="650" cy="210" r="3" fill="var(--bg-0)" stroke="var(--accent-primary)" stroke-width="1.5"/>
+            <rect x="520" y="235" width="60" height="20" fill="var(--bg-1)" rx="2" stroke="var(--border-1)"/>
+            <text x="550" y="249" fill="var(--text-1)" font-family="var(--font-mono)" font-size="11" text-anchor="middle">145.2m</text>
+
+            <!-- Crosshair -->
+            <path d="M 400 400 L 410 400 M 390 400 L 380 400 M 395 395 L 395 385 M 395 405 L 395 415" stroke="var(--text-3)" stroke-width="1"/>
+            <circle cx="395" cy="400" r="1" fill="var(--text-2)"/>
+        </svg>
+        
+        <div class="vp-overlay vp-top-left flex gap-2">
+            <div class="vp-label label">PREDICTED</div>
+            <div class="vp-label label text-muted">REFERENCE</div>
+        </div>
+        
+        <div class="vp-overlay vp-top-right">
+            <div class="compass">
+                <svg width="12" height="12" viewBox="0 0 24 24" stroke="var(--text-1)" stroke-width="2" fill="none"><path d="M12 2l4 20-4-4-4 4 4-20z"/></svg>
+            </div>
+        </div>
+        
+        <div class="vp-overlay vp-bottom-left">
+            <div class="scale-bar">
+                <div class="scale-line"></div>
+                <div class="mono text-sm mt-1">100 m</div>
+            </div>
+        </div>
+        
+        <div class="vp-overlay vp-bottom-right">
+            <div class="minimap">
+                <div class="minimap-view"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INSPECTOR -->
+    <div class="inspector">
+        
+        <div class="panel-section">
+            <div class="panel-header">
+                <div class="label">Result Info</div>
+            </div>
+            
+            <div class="warning-banner">
+                No segmentation: every pixel treated as ground; buildings and trees will be flat.
+            </div>
+
+            <div class="data-grid">
+                <span>Method</span><span>heuristic</span>
+                <span>Size</span><span>4096 × 4096</span>
+                <span>Pixel Size</span><span>0.30 m</span>
+                <span>Height Range</span><span>-12.4m to 105.8m</span>
+                <span>Mean Conf</span><span>87.4%</span>
+                <span>Datum</span><span>Local (Relative)</span>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-header">
+                <div class="label">Camera</div>
+            </div>
+            <div class="flex-col gap-3">
+                <div class="segmented-control">
+                    <div class="segment active">Orbit</div>
+                    <div class="segment">Fly (WASD)</div>
+                </div>
+                <div class="flex-col gap-1">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted">Vertical Exaggeration</span>
+                        <span class="mono">2.5x</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="2.5">
+                </div>
+                <div class="flex-col gap-1">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted">Relief Focus</span>
+                        <span class="mono">0.5</span>
+                    </div>
+                    <input type="range" min="0" max="1" value="0.5">
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-header">
+                <div class="label">Overlays</div>
+            </div>
+            <select class="mb-3" style="margin-bottom: 8px;">
+                <option>Height (Hypsometric)</option>
+                <option>None (Albedo)</option>
+                <option>Slope</option>
+                <option>Confidence</option>
+                <option>Error</option>
+            </select>
+            <!-- Legend Ramp -->
+            <div class="flex-col gap-1 mt-2">
+                <div class="flex justify-between text-sm mono">
+                    <span>-12m</span><span>105m</span>
+                </div>
+                <div style="height: 8px; width: 100%; border-radius: 2px; border: 1px solid var(--border-1); background: linear-gradient(to right, #113322, #335522, #888833, #aa5522, #dddddd);"></div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-header">
+                <div class="label">Bookmarks</div>
+                <button class="btn-tertiary btn-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+            </div>
+            <div class="flex-col gap-2">
+                <div class="flex justify-between items-center p-2" style="background: var(--bg-2); border-radius: var(--radius-sm);">
+                    <span class="text-sm">Main Crater</span>
+                    <button class="btn-tertiary btn-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                </div>
+                <div class="flex justify-between items-center p-2" style="border: 1px solid var(--border-1); border-radius: var(--radius-sm);">
+                    <span class="text-sm">North Ridge</span>
+                    <button class="btn-tertiary btn-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                </div>
+                <button class="btn-secondary mt-2" style="width: 100%; margin-top: 8px;">Start Tour</button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="panel-header">
+                <div class="label">Lighting</div>
+            </div>
+            <div class="flex-col gap-3">
+                <div class="flex-col gap-1">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted">Azimuth</span><span class="mono">315°</span>
+                    </div>
+                    <input type="range" min="0" max="360" value="315">
+                </div>
+                <div class="flex-col gap-1">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-muted">Elevation</span><span class="mono">45°</span>
+                    </div>
+                    <input type="range" min="0" max="90" value="45">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <div class="flex gap-4">
+            <span class="status-item"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4 12H2M22 12h-2"/></svg> 452, 1024</span>
+            <span class="status-item">Lat: 45.1234° N, Lon: 12.3456° E</span>
+            <span class="status-item">Z: 42.1 m</span>
+            <span class="status-item">Slope: 12.4°</span>
+        </div>
+        <div class="flex gap-4 items-center">
+            <span>EPSG:3857</span>
+            <span>60 FPS</span>
+            <span class="status-item"><div class="status-dot"></div> 12ms</span>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================================
+     SCREENS & STATES PRESENTATION
+     ======================================================================= -->
+<div class="presentation-container">
+    <div class="presentation-header">
+        <h1 style="font-weight: 400;">Screens and states</h1>
+        <p class="text-muted mt-2">Static layouts and variants for application views.</p>
+    </div>
+
+    <div class="presentation-grid">
+        
+        <!-- (a) Empty State -->
+        <div class="mock-window">
+            <div class="mock-header">Empty State / Upload</div>
+            <div class="mock-content flex-col" style="background: var(--bg-1);">
+                <div class="dropzone">
+                    <svg class="icon mb-3" style="width: 32px; height: 32px; margin-bottom: 12px; color: var(--text-2);" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    <div style="font-size: var(--text-lg); margin-bottom: 8px;">Drop a PNG, JPG or GeoTIFF</div>
+                    <div class="text-muted text-sm mb-4" style="margin-bottom: 24px;">or click to browse</div>
+                    
+                    <div class="flex-col gap-3" style="width: 300px; text-align: left;">
+                        <label class="checkbox-wrapper text-sm">
+                            <input type="checkbox" checked>
+                            <div class="checkbox-custom"></div>
+                            Robust Fit
+                        </label>
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span>Pixel Size (m)</span>
+                            <input type="number" value="0.3" style="width: 80px;">
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span>Segmentation</span>
+                            <select style="width: 140px;">
+                                <option>Automatic</option>
+                                <option>Upload mask</option>
+                                <option>Blank mask</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- (b) Processing State -->
+        <div class="mock-window">
+            <div class="mock-header">Processing State</div>
+            <div class="mock-content items-center justify-center" style="background: var(--bg-1);">
+                <div class="flex-col items-center gap-3" style="width: 300px;">
+                    <div class="label" style="align-self: flex-start;">Inferring depth...</div>
+                    <div style="width: 100%; height: 4px; background: var(--border-1); border-radius: 2px; overflow: hidden;">
+                        <div style="width: 65%; height: 100%; background: var(--accent-primary);"></div>
+                    </div>
+                    <div class="flex justify-between text-sm mono w-100" style="width: 100%;">
+                        <span>65%</span>
+                        <span class="text-muted">00:12s elapsed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- (c) Validation Panel -->
+        <div class="mock-window">
+            <div class="mock-header">Validation Panel</div>
+            <div class="mock-content flex-col" style="background: var(--bg-1); overflow-y: auto;">
+                <div class="p-3 border-b flex-col gap-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm">Reference File</span>
+                        <button class="btn-secondary">Upload CSV/TIF</button>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="flex-col gap-1 flex-1">
+                            <span class="text-sm text-muted">NoData Value</span>
+                            <input type="number" value="-9999">
+                        </div>
+                        <div class="flex-col gap-1 flex-1">
+                            <span class="text-sm text-muted">Conf Threshold</span>
+                            <input type="number" value="0.5" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-3 border-b">
+                    <div class="label mb-2" style="margin-bottom: 8px;">Overall Metrics</div>
+                    <table>
+                        <tr><td>RMSE</td><td>1.24 m</td></tr>
+                        <tr><td>MAE</td><td>0.85 m</td></tr>
+                        <tr><td>Bias</td><td>-0.12 m</td></tr>
+                        <tr><td>Pearson r</td><td>0.94</td></tr>
+                        <tr><td>95th Pctl</td><td>2.80 m</td></tr>
+                        <tr><td>Overlap</td><td>87.4%</td></tr>
+                        <tr><td>Valid Px</td><td>1,048,576</td></tr>
+                    </table>
+                </div>
+                
+                <div class="p-3 border-b">
+                    <div class="label mb-2" style="margin-bottom: 8px;">Error Distribution</div>
+                    <div class="chart-container" style="height: 120px;">
+                        <svg width="100%" height="100%" viewBox="0 0 200 100" preserveAspectRatio="none">
+                            <line x1="100" y1="0" x2="100" y2="80" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="2,2"/>
+                            <!-- Histogram bars -->
+                            <rect x="70" y="60" width="8" height="20" fill="var(--bg-3)"/>
+                            <rect x="80" y="40" width="8" height="40" fill="var(--bg-3)"/>
+                            <rect x="90" y="10" width="8" height="70" fill="var(--accent-primary)"/>
+                            <rect x="100" y="15" width="8" height="65" fill="var(--bg-3)"/>
+                            <rect x="110" y="30" width="8" height="50" fill="var(--bg-3)"/>
+                            <rect x="120" y="50" width="8" height="30" fill="var(--bg-3)"/>
+                            <rect x="130" y="70" width="8" height="10" fill="var(--bg-3)"/>
+                            
+                            <line x1="0" y1="80" x2="200" y2="80" stroke="var(--border-2)" stroke-width="1"/>
+                            <text x="100" y="95" fill="var(--text-2)" font-family="var(--font-mono)" font-size="8" text-anchor="middle">0m Error</text>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="p-3 border-b">
+                    <div class="label mb-2" style="margin-bottom: 8px;">Predicted vs Reference (Density)</div>
+                    <div class="chart-container flex items-center justify-center" style="height: 150px;">
+                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <!-- Grid -->
+                            <line x1="0" y1="50" x2="100" y2="50" stroke="var(--border-1)" stroke-width="0.5"/>
+                            <line x1="50" y1="0" x2="50" y2="100" stroke="var(--border-1)" stroke-width="0.5"/>
+                            <!-- 1:1 Line -->
+                            <line x1="0" y1="100" x2="100" y2="0" stroke="var(--text-3)" stroke-width="0.5" stroke-dasharray="2,2"/>
+                            <!-- Scatter blob placeholder -->
+                            <ellipse cx="45" cy="50" rx="30" ry="15" fill="url(#hypsometric)" opacity="0.6" transform="rotate(-40 45 50)"/>
+                            <ellipse cx="45" cy="50" rx="10" ry="5" fill="#fff" opacity="0.4" transform="rotate(-40 45 50)"/>
+                            <!-- Axes -->
+                            <line x1="0" y1="100" x2="100" y2="100" stroke="var(--border-2)" stroke-width="1"/>
+                            <line x1="0" y1="0" x2="0" y2="100" stroke="var(--border-2)" stroke-width="1"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="p-3">
+                    <div class="flex justify-between items-center mb-2" style="margin-bottom: 8px;">
+                        <div class="label">Regions</div>
+                        <button class="btn-tertiary btn-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+                    </div>
+                    <table>
+                        <tr><th>Tag</th><th>RMSE</th><th>Px</th></tr>
+                        <tr><td><span class="badge" style="border-left: 2px solid #E91E63;">Urban</span></td><td>2.1m</td><td>12k</td></tr>
+                        <tr><td><span class="badge" style="border-left: 2px solid #4CAF50;">Forest</span></td><td>4.5m</td><td>34k</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- (d) Settings Dialog -->
+        <div class="mock-window">
+            <div class="mock-header">Settings Dialog</div>
+            <div class="mock-content items-center justify-center" style="background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgwem0yMCAyMGMxMSAwIDIwLTkgMjAtMjBoLTIwYy0xMSAwLTIwIDktMjAgMjB6IiBmaWxsPSIjMjIyIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIG9wYWNpdHk9Ii4wNSIvPjwvc3ZnPg==') var(--bg-0);">
+                <div class="dialog">
+                    <div class="p-4 border-b flex justify-between items-center">
+                        <div style="font-weight: 500;">Settings</div>
+                        <button class="btn-tertiary btn-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                    <div class="p-4 flex-col gap-4">
+                        <div class="flex-col gap-1">
+                            <label class="text-sm text-muted">Backend URL</label>
+                            <div class="flex gap-2">
+                                <input type="text" value="http://localhost:8000">
+                                <button class="btn-secondary">Test</button>
+                            </div>
+                        </div>
+                        <div class="flex-col gap-1">
+                            <label class="text-sm text-muted">Segmentation Model ID</label>
+                            <input type="text" value="nvidia/segformer-b0-finetuned-ade-512-512">
+                        </div>
+                    </div>
+                    <div class="p-4 border-t flex justify-between items-center" style="background: var(--bg-2);">
+                        <div class="text-sm text-muted">v1.2.0</div>
+                        <button class="btn-primary">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- (e) States & Style Ref -->
+        <div class="mock-window">
+            <div class="mock-header">Style Reference & Components</div>
+            <div class="mock-content flex-col p-4 gap-4" style="background: var(--bg-1); overflow-y: auto;">
+                <div class="flex-col gap-2">
+                    <div class="label">Colors</div>
+                    <div class="flex gap-2">
+                        <div style="width:24px;height:24px;background:var(--bg-0);border:1px solid var(--border-1);" title="bg-0"></div>
+                        <div style="width:24px;height:24px;background:var(--bg-1);border:1px solid var(--border-1);" title="bg-1"></div>
+                        <div style="width:24px;height:24px;background:var(--bg-2);border:1px solid var(--border-1);" title="bg-2"></div>
+                        <div style="width:24px;height:24px;background:var(--bg-3);border:1px solid var(--border-1);" title="bg-3"></div>
+                        <div style="width:24px;height:24px;background:var(--accent-primary);border:1px solid var(--border-1);" title="accent"></div>
+                        <div style="width:24px;height:24px;background:var(--status-error);border:1px solid var(--border-1);" title="error"></div>
+                    </div>
+                </div>
+                
+                <div class="flex-col gap-2">
+                    <div class="label">Typography</div>
+                    <div>Body Base 13px</div>
+                    <div class="text-sm text-muted">Body Small 11px Muted</div>
+                    <div class="mono">145.23 m (Mono Tabular)</div>
+                    <div class="label">Label 10px Tracked</div>
+                </div>
+                
+                <div class="flex-col gap-2">
+                    <div class="label">Buttons</div>
+                    <div class="flex gap-2 items-center">
+                        <button class="btn-primary">Primary</button>
+                        <button class="btn-secondary">Secondary</button>
+                        <button class="btn-tertiary">Tertiary</button>
+                        <button class="btn-primary" disabled>Disabled</button>
+                    </div>
+                </div>
+
+                <div class="flex-col gap-2">
+                    <div class="label">Alerts</div>
+                    <div class="badge warning p-2" style="display: flex;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12 9v2M12 15h.01M22.61 16.53l-9.17-15.86a2 2 0 00-3.46 0l-9.17 15.86a2 2 0 001.73 3h18.34a2 2 0 001.73-3z"/></svg>
+                        Connection lost. Retrying...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
