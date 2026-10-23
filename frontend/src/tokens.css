@@ -1,0 +1,159 @@
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/newsreader/400-italic.css";
+
+:root {
+  /* Cartographer's Workbench Design Tokens */
+  
+  /* Backgrounds */
+  --bg-0: #0D1013;
+  --bg-1: #12161A;
+  --bg-2: #181D22;
+  
+  /* Borders */
+  --border-hairline: #262D34;
+  
+  /* Foreground / Text */
+  --fg-0: #E6E2D9;
+  --fg-1: #9AA3AB;
+  --fg-2: #6B747C;
+  
+  /* Accent */
+  --accent: #FF6A2B;
+  
+  /* Semantics (muted) */
+  --error: #D15555;
+  --warn: #D1A355;
+  --ok: #55D17B;
+  
+  /* Typography */
+  --font-ui: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: "Newsreader", serif;
+  
+  /* Type Scale */
+  --text-10: 0.625rem; /* 10px */
+  --text-11: 0.6875rem; /* 11px */
+  --text-12: 0.75rem; /* 12px */
+  --text-13: 0.8125rem; /* 13px */
+  --text-16: 1rem; /* 16px */
+  --text-20: 1.25rem; /* 20px */
+  
+  /* Radii */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+}
+
+body {
+  background-color: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-ui);
+  font-size: var(--text-12);
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Number / Data styles */
+.mono-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-12);
+}
+
+/* Section labels */
+.section-label {
+  font-size: var(--text-10);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-1);
+  font-weight: 500;
+}
+
+/* Buttons */
+button {
+  font-family: var(--font-ui);
+  font-size: var(--text-12);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s ease-out;
+  outline: none;
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--accent);
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: var(--bg-0);
+  border: 1px solid var(--accent);
+  padding: var(--sp-1) var(--sp-3);
+  font-weight: 500;
+}
+
+.btn-primary:hover {
+  background-color: #E55820;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--fg-0);
+  border: 1px solid var(--border-hairline);
+  padding: var(--sp-1) var(--sp-3);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-1);
+  border-color: var(--fg-2);
+}
+
+.btn-tertiary {
+  background-color: transparent;
+  color: var(--fg-1);
+  border: none;
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.btn-tertiary:hover {
+  color: var(--fg-0);
+}
+
+/* Layout */
+#root {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Input Fields */
+input[type="text"], input[type="number"] {
+  background-color: var(--bg-1);
+  border: 1px solid var(--border-hairline);
+  color: var(--fg-0);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-1) var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-12);
+}
+
+input[type="text"]:focus, input[type="number"]:focus {
+  border-color: var(--accent);
+  outline: none;
+}

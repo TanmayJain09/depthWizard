@@ -1,0 +1,239 @@
+@import "./tokens.css";
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, var(--bg-1) 0%, var(--bg-0) 100%);
+}
+
+.upload-container {
+  padding: var(--sp-4);
+  width: 100%;
+  height: 100%;
+}
+
+.drop-zone {
+  width: 400px;
+  height: 200px;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.2s ease;
+  background-color: var(--bg-1);
+}
+
+.drop-zone:hover {
+  border-color: var(--accent);
+  background-color: var(--bg-2);
+}
+
+.file-hidden {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-config-box {
+  width: 400px;
+  padding: var(--sp-6);
+  background-color: var(--bg-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.badge {
+  font-size: var(--text-10);
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid var(--border-hairline);
+}
+
+.badge-geo {
+  background-color: rgba(85, 209, 123, 0.1);
+  color: var(--ok);
+  border-color: rgba(85, 209, 123, 0.2);
+}
+
+.badge-rel {
+  background-color: rgba(209, 163, 85, 0.1);
+  color: var(--warn);
+  border-color: rgba(209, 163, 85, 0.2);
+}
+
+.select-input {
+  width: 100%;
+  background-color: var(--bg-0);
+  border: 1px solid var(--border-hairline);
+  color: var(--fg-0);
+  padding: var(--sp-2);
+  font-family: var(--font-ui);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.select-input:focus {
+  border-color: var(--accent);
+}
+
+.file-input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  color: var(--fg-1);
+}
+
+.progress-box, .error-box {
+  width: 300px;
+  padding: var(--sp-6);
+  background-color: var(--bg-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 2px;
+  background-color: var(--bg-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 0.3s ease;
+}
+
+/* Layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+}
+
+.main-viewport {
+  flex: 1;
+  position: relative;
+  height: calc(100vh - 28px);
+}
+
+.tool-rail {
+  width: 48px;
+  background-color: var(--bg-1);
+  border-right: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--sp-2);
+  z-index: 10;
+  height: calc(100vh - 28px);
+}
+
+.tool-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-1);
+  padding: var(--sp-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--sp-1);
+}
+
+.tool-btn:hover {
+  color: var(--fg-0);
+  background-color: var(--bg-2);
+}
+
+.tool-btn.active {
+  color: var(--accent);
+  background-color: rgba(255, 106, 43, 0.1);
+}
+
+.inspector-panel {
+  width: 320px;
+  background-color: var(--bg-1);
+  border-left: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  height: calc(100vh - 28px);
+  overflow-y: auto;
+}
+
+.inspector-header {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-hairline);
+  background-color: var(--bg-2);
+}
+
+.inspector-section {
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+/* Make sure the viewer container handles absolute correctly */
+.viewer-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Bottom Status Bar */
+.status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background-color: var(--bg-1);
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-10);
+  color: var(--fg-1);
+  z-index: 100;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.mock-badge {
+  background-color: var(--warn);
+  color: var(--bg-0);
+  padding: 0 4px;
+  font-weight: bold;
+}
+
