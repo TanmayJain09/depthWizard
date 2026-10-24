@@ -1,6 +1,7 @@
-# DepthWizard
-
+<div align="center">
+<h1> DepthWizard </h1>
 Semantic-aware uncertainty calibration for single-view DSM (elevation) estimation.
+</div>
 
 <<DEMO GIF OR HERO SCREENSHOT>>
 
