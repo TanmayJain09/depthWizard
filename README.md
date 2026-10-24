@@ -145,4 +145,4 @@ cd frontend && npm test             # <<VERIFY>>
 - SSRDepth
 
 ## License
-<<LICENSE>>
+[MIT License](./LICENCE)
