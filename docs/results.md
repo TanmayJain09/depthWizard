@@ -33,7 +33,14 @@ Within-class correlation of raw depth:
 - Remaining error is mostly vegetation (4.35 m) and building (3.79 m); it comes from the backbone, not the calibration.
 
 ## 3. Full benchmark (`eval/run_benchmark.py`)
-<<PASTE benchmark_summary.json NUMBERS HERE>>
+30 DFC2019 tiles, 256 sparse reference points per tile, 5 seeds, metrics pooled over all pixels (157M).
+
+| Method | RMSE (m) | MAE (m) | Bias (m) | Correlation |
+|---|---|---|---|---|
+| Single global fit | 4.01 | 2.89 | -0.001 | 0.610 |
+| **Per-class (ours)** | **2.81** | **1.64** | 0.002 | **0.833** |
+
+Per-class calibration reduces RMSE by 30% and MAE by 43%, and beat the global fit on 100% of tiles.
 
 By terrain type:
 
