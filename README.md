@@ -132,10 +132,10 @@ cd frontend && npm test             # <<VERIFY>>
 ## Team
 | Name | Role |
 |---|---|
-| <<NAME>> | Backend, ML/DL (inference, calibration, confidence, API) |
-| <<NAME>> | Frontend, 3D visualization |
-| <<NAME>> | Literature survey, evaluation scripts, documentation |
-| <<NAME>> | Dataset preparation, preprocessing, integration testing |
+| Tanmay Jain | Backend, ML/DL (inference, calibration, confidence, API), Literature survey, evaluation scripts, Dataset preparation, preprocessing,  |
+| Ashutosh Gopale | Frontend, 3D visualization, API Integration |
+| Mahak Choudhary | Documentation, Backend Review |
+| Rishabh Gaud | Integration testing |
 
 ## Acknowledgements
 Depth Anything V2, DFC2019 (IEEE GRSS Data Fusion Contest), <<OTHERS>>
