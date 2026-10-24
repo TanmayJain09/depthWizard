@@ -27,8 +27,7 @@ CLASS_NAMES = {0: "ground", 1: "vegetation", 2: "building", 3: "water"}  # CHECK
 
 
 def pred_dsm(result):
-    """CHECK: return the calibrated DSM array from calibrate_georeferenced()."""
-    return result["dsm"]
+    return result.dsm
 
 
 def find_tiles(n):
