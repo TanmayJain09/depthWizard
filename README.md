@@ -138,7 +138,11 @@ cd frontend && npm test             # <<VERIFY>>
 | Rishabh Gaud | Integration testing | [@rishabhchamp007-cloud](https://github.com/rishabhchamp007-cloud) |
 
 ## Acknowledgements
-Depth Anything V2, DFC2019 (IEEE GRSS Data Fusion Contest), <<OTHERS>>
+- Depth Anything V2
+- DFC2019 (IEEE GRSS Data Fusion Contest)
+- TR2M –  Language Conditioned Rescalling
+- ScaleDepth
+- SSRDepth
 
 ## License
 <<LICENSE>>
