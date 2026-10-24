@@ -22,8 +22,7 @@ models/checkpoints/*
 # Generated outputs
 backend/outputs/*
 !backend/outputs/.gitkeep
-eval/results/*
-!eval/results/.gitkeep
+
 
 # Frontend
 frontend/node_modules/
